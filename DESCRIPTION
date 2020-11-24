@@ -1,0 +1,23 @@
+Package: smallDB
+Type: Package
+Title: This package contains functions for working with the small Truven DB's
+Version: 0.1.0
+Author: Who wrote it
+Maintainer: Aaron Miller <aaron-miller@uiowa.edu>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: GPL
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    tibble,
+    dplyr,
+    glue,
+    checkmate,
+    bit64,
+    magrittr,
+    stringr,
+    tidyr,
+    purrr,
+    rlang
+RoxygenNote: 7.1.1
