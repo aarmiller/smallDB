@@ -4,3 +4,4 @@
 .Ruserdata
 build_scripts.R
 .DS_Store
+.Rproj
