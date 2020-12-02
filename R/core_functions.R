@@ -15,13 +15,18 @@
 #' @examples
 #' collect_table()
 #' @export
-collect_table <- function(settings=c("inpatient","outpatient"),sources=c("ccae","mdcr"),years=NULL) {
-  if (is.null(years)){
-    years <- stringr::str_pad(c(1:17),2,pad="0")
+collect_table <- function (settings = c("inpatient", "outpatient"),
+                           sources = c("ccae", "mdcr"),
+                           years = NULL)
+{
+  if (is.null(years)) {
+    years <- stringr::str_pad(c(1:17), 2, pad = "0")
+  } else {
+    years <- stringr::str_pad(years, 2, pad = "0")
   }
-  tibble::tibble(setting=settings) %>%
-    dplyr::mutate(source=purrr::map(.data$setting,~sources)) %>%
-    tidyr::unnest() %>%
-    dplyr::mutate(year=purrr::map(source,~years)) %>%
-    tidyr::unnest()
+  tibble::tibble(setting = settings) %>% 
+    dplyr::mutate(source = purrr::map(.data$setting,~sources)) %>% 
+    tidyr::unnest(c(source)) %>% 
+    dplyr::mutate(year = purrr::map(source,~years)) %>% 
+    tidyr::unnest(c(year))
 }
