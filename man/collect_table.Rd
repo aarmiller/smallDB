@@ -5,9 +5,9 @@
 \title{Build collection tibble}
 \usage{
 collect_table(
-  settings = c("inpatient", "outpatient"),
+  settings = c("inpatient", "outpatient", "rx"),
   sources = c("ccae", "mdcr"),
-  years = NULL
+  years = 1:20
 )
 }
 \arguments{

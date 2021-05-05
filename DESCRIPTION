@@ -13,6 +13,8 @@ RoxygenNote: 7.1.1
 Imports: 
     bit64,
     checkmate,
+    DBI,
+    dbplyr,
     dplyr,
     glue,
     magrittr,
