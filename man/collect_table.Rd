@@ -11,7 +11,7 @@ collect_table(
 )
 }
 \arguments{
-\item{settings}{"inpatient", "outpatient" or c("inpatient","outpatient")}
+\item{settings}{"inpatient", "outpatient", "rx"}
 
 \item{sources}{"ccae" or "mdcr" or c("ccae","mdcr")}
 

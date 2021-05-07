@@ -6,7 +6,7 @@
 #'
 #' @importFrom rlang .data
 #'
-#' @param settings "inpatient", "outpatient" or c("inpatient","outpatient")
+#' @param settings "inpatient", "outpatient", "rx"
 #' @param sources "ccae" or "mdcr" or c("ccae","mdcr")
 #' @param years vector of years to collect. Note: if no argument is provided
 #' all years will be selected
