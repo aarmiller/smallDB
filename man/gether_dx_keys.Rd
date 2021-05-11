@@ -2,7 +2,7 @@
 % Please edit documentation in R/pull_tables_gether.R
 \name{gether_dx_keys}
 \alias{gether_dx_keys}
-\title{Gather visit keys associated with a set of visits}
+\title{Gather visit keys associated with a set of visits for a particular diagnosis}
 \usage{
 gether_dx_keys(collect_tab = collect_table(), dx_list, db_con)
 }

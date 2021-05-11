@@ -44,7 +44,7 @@ gether_rx_dates <- function(collect_tab=collect_table(),db_con,collect_n=Inf){
   return(out)
 }
 
-#' Gather visit keys associated with a set of visits
+#' Gather visit keys associated with a set of visits for a particular diagnosis
 #'
 #' This function return a tibble of
 #'
@@ -182,6 +182,7 @@ gether_dx_keys <- function(collect_tab=collect_table(),dx_list,db_con){
     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid)) %>%
     dplyr::select(.data$enrolid,.data$stdplac,.data$svcdate,.data$key) %>%
     dplyr::inner_join(out_temp %>%
+                        ungroup() %>%
                         dplyr::select(.data$data) %>%
                         tidyr::unnest(cols = c(data)),
                       by = c("enrolid", "stdplac", "svcdate")) %>%
@@ -193,4 +194,46 @@ gether_dx_keys <- function(collect_tab=collect_table(),dx_list,db_con){
   #### Return ####
   return(dx_keys)
 }
+
+
+#' Gather (gether) rx data from all tables defined in a collection tab
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab a collection table
+#' @param ndc_codes a vector of ndc_codes to lookup
+#' @param rx_vars variables to collect. Default is rx_vars = c("enrolid","ndcnum","svcdate")
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#'
+#' @export
+gether_rx_keys <- function(collect_tab=collect_table(), ndc_codes,
+                           rx_vars=c("enrolid","ndcnum","svcdate"), db_con,
+                           collect_n=Inf){
+
+  tmp_ndc_data <- collect_tab %>%
+    filter(setting == "rx") %>%
+    dplyr::mutate(rx_data=purrr::pmap(list(.data$source,.data$year),
+                                      ~get_rx_data(source = ..1,
+                                                   year = ..2,
+                                                   ndc_codes = ndc_codes,
+                                                   rx_vars = rx_vars,
+                                                   db_con = db_con,
+                                                   collect_n = collect_n))) %>%
+    dplyr::select(.data$rx_data) %>%
+    tidyr::unnest(cols = c("rx_data"))
+
+  tmp_rx_keys <- db_con %>%
+    dplyr::tbl("rx_keys") %>%
+    dplyr::collect()
+
+  out <- tmp_ndc_data %>%
+    dplyr::inner_join(select(tmp_rx_keys,
+                             .data$enrolid, .data$svcdate, .data$key),
+                      by = c("enrolid", "svcdate"))
+
+  return(out)
+}
+
+
 
