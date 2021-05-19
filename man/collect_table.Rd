@@ -7,7 +7,8 @@
 collect_table(
   settings = c("inpatient", "outpatient", "rx"),
   sources = c("ccae", "mdcr"),
-  years = 1:20
+  years = 1:20,
+  medicaid_years = NULL
 )
 }
 \arguments{
@@ -17,6 +18,8 @@ collect_table(
 
 \item{years}{vector of years to collect. Note: if no argument is provided
 all years will be selected}
+
+\item{medicaid_years}{years of medicaid data to collect. Default is NULL}
 }
 \value{
 a tibble

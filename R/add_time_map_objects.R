@@ -63,31 +63,24 @@ build_dx_indicators <- function(condition_dx_list,db_con,collect_tab=collect_tab
 #' visit keys if no keys are found in the database
 #' @return a tibble containing keys and indicators for each condition
 #' @export
-build_rx_indicators <- function(condition_dx_list,db_con,collect_tab=collect_table()){
+build_rx_indicators <- function(rx_list,db_con,collect_tab=collect_table()){
 
   if (!any(DBI::dbListTables(db_con) %in% c("rx_keys"))){
     stop("Database contains no rx keys.")
   }
 
-  # all_cond_codes <- list(icd9_codes=purrr::map(condition_dx_list,~.$icd9_codes) %>% unlist(use.names = F),
-  #                        icd10_codes=purrr::map(condition_dx_list,~.$icd10_codes) %>% unlist(use.names = F))
-  #
-  # cond_keys <- gether_dx_keys(collect_tab = collect_tab,dx_list = all_cond_codes,db_con = db_con)
-  #
-  # cond_keys_name <- tibble::tibble(name=names(condition_dx_list)) %>%
-  #   dplyr::mutate(dx=purrr::map(.data$name,~condition_dx_list[[.]] %>% unlist())) %>%
-  #   tidyr::unnest(cols = c(dx)) %>%
-  #   dplyr::inner_join(cond_keys,by = "dx")
-  #
-  # cond_inds <- cond_keys_name %>%
-  #   dplyr::distinct(.data$name,.data$key) %>%
-  #   dplyr::mutate(dx_ind=1L) %>%
-  #   tidyr::spread(key=.data$name,value=.data$dx_ind) %>%
-  #   dplyr::inner_join(cond_keys_name %>%
-  #                       dplyr::distinct(.data$key),
-  #                     by = "key") %>%
-  #   dplyr::mutate_at(.vars=dplyr::vars(-.data$key),
-  #                    .funs=list(~ifelse(is.na(.),0L,.)))
+  all_codes <- unlist(rx_list,use.names = FALSE)
 
-  return(cond_inds)
+  code_keys <- gether_rx_keys(ndc_codes=all_codes, db_con = db_con)
+
+  rx_inds <- tibble::enframe(rx_list) %>%
+    tidyr::unnest(value) %>%
+    dplyr::rename(ndcnum=value) %>%
+    dplyr::inner_join(code_keys) %>%
+    dplyr::distinct(name,key) %>%
+    dplyr::mutate(ind=1L) %>%
+    tidyr::pivot_wider(names_from = name,values_from = ind,
+                       values_fill = 0)
+
+  return(rx_inds)
 }

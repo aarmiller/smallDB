@@ -9,16 +9,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Overview
 
+This package contains functions for working with the small Truven database extracts.
+
 
 ## Examples
 
-```{r}
+Load the required packages:
+```{r,message=FALSE}
 library(tidyverse)
 library(smallDB)
 ```
 
-
-
+Connect to an example database extract:
 ```{r}
 # connect to database
 con <- DBI::dbConnect(RSQLite::SQLite(), "~/Data/cftr/pancreatitis_chronic.db")
@@ -26,31 +28,62 @@ con <- DBI::dbConnect(RSQLite::SQLite(), "~/Data/cftr/pancreatitis_chronic.db")
 
 ### Create timemap
 
-Create timemap, in this example visit keys have not been added to the database,
+Create a longitudinal timemap. In this example visit keys have not been added to the database,
 so these will be added temporarily to create the timemap.
 
 ```{r}
 tm <- build_time_map(db_con = con)
 
+# view timemap object
 tm
 
 ```
 
-### Add indicators
+### Add diagnosis indicators
 
-Create a list of diagnosis indicators. In this example we add indicators for CDI.
+The `build_dx_indicators()` function can be used to create a list of diagnosis indicators. In this example we create a single indicator for a single diagnosis - CDI.
 
 ```{r}
 
+# create the diagnosis list
 dx_list <- list(cdi = list(icd9_codes = "00845",
                            icd10_codes = c("A047","A0471","A0472")))
 
-dx_list
-
+# build the indicators
 build_dx_indicators(db_con = con,condition_dx_list = dx_list)
 
 ```
 
+
+We could also generate a list of multiple diagnoses to create multiple indicators for. Here 
+I will use the `codeBuildr` package to load the diagnosis codes for AMI and CDI.
+```{r, message = FALSE}
+library(codeBuildr)
+
+# load the diagnosis codes for AMI and CDI
+dx_list <- load_disease_codes(c("ami","cdi"))
+
+# view the code list
+dx_list
+
+# get the diagnosis indicators
+build_dx_indicators(db_con = con,condition_dx_list = dx_list)
+
+```
+### Add medication indicators
+
+The function `codeBuildr::load_rx_codes("all_abx")` can be used to load the ndc codes
+for the group of all antibiotics.
+
+```{r}
+abx_codes <- load_rx_codes("all_abx")
+```
+
+The function `build_rx_indicators()` can then be used to collect indicators for each of the antibiotics in the `all_abx` list.
+
+```{r}
+build_rx_indicators(rx_list = abx_codes,db_con = con)
+```
 
 ### Close database connection
 

@@ -3,6 +3,7 @@
 export("%>%")
 export(add_time_map_keys)
 export(build_dx_indicators)
+export(build_rx_indicators)
 export(build_time_map)
 export(build_time_map_keys)
 export(collect_table)
