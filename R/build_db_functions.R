@@ -25,9 +25,9 @@ get_dx9_dates <- function(setting,source,year,dx_list,con,collect_n=10){
   if (setting=="inpatient") {
     if (as.integer(year)<15){
       if (as.integer(year)==1){
-        dat <- dplyr::tbl(con,paste0(setting,"_dx_",db,"_",year)) %>%
+        dat <- dplyr::tbl(con,paste0(setting,"_dx_",source,"_",year)) %>%
           dplyr::filter(dx %in% dx_list) %>%
-          dplyr::inner_join(dplyr::tbl(con,paste0(setting,"_core_",db,"_",year)) %>%
+          dplyr::inner_join(dplyr::tbl(con,paste0(setting,"_core_",source,"_",year)) %>%
                        dplyr::mutate(disdate=admdate+los) %>%
                        dplyr::select(caseid,enrolid,admdate,disdate),
                      by="caseid") %>%
