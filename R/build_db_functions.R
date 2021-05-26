@@ -1,5 +1,71 @@
 
 
+#### Write path directory ####
+
+#' Get Diagnosis Dates for List of ICD-9 diagnoses
+#'
+#' This function goes to the main database and pulls...
+#'
+#' @importFrom rlang .data
+#'
+#' @param cond name of the condition
+#' @param group name of group, options include 'grant', 'collab' (default is
+#' 'grant')
+#' @param base_path base path for output, if not specified will use group defined
+#' above
+#' @param years years of ccae and mdcr data to collect
+#' @param medicaid_years years of medicaid data to collect
+#' @param sources options include ccae, mdcr, and medicaid, default is all three
+#' @param directory_path path to where directory file to write to is located, if NULL
+#' the defaul location will be used
+#' @param overwrite logical indicator of whether to overwrite if 'cond' exists
+#'
+#' @export
+#'
+add_directory_path <- function(cond, group = "grant", base_path = NULL,
+                               years = 1:20, medicaid_years = 16:18,
+                               sources = c("ccae","mdcr","medicaid"),
+                               directory_path = NULL, overwrite = FALSE){
+
+  if (is.null(directory_path)) {
+    directory_path <- "/Shared/Statepi_Diagnosis/params/"
+  }
+
+  # Check if output file exists
+
+  if (file.exists(paste0(directory_path,"small_db_paths.RData"))) {
+    load(paste0(directory_path,"small_db_paths.RData"))
+
+    if (cond %in% names(small_db_paths) & overwrite == FALSE){
+      stop("Condition already exists in path directory and overwrite set to
+           `FALSE`")
+    }
+
+    } else {
+    small_db_paths <- list()
+    }
+
+  if (is.null(base_path)){
+    if (group=="grant"){
+      base_path <- "/Shared/Statepi_Diagnosis/grant_projects/"
+    } else {
+      base_path <- "/Shared/Statepi_Diagnosis/collab_projects/"
+    }
+  }
+
+  cond_out <- list(sources = sources,
+                   years = years,
+                   medicaid_years = medicaid_years,
+                   base_path = base_path,
+                   last_build = Sys.Date(),
+                   build_status = "initiated")
+
+  small_db_paths[[cond]] <- cond_out
+
+  save(small_db_paths,file = paste0(directory_path,"small_db_paths.RData"))
+
+}
+
 
 
 #### Get DX Functions ####
