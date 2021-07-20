@@ -75,7 +75,7 @@ get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 #' @param collect_n the number of rows to collect
 #'
 #' @export
-get_rx_data <- function(source,year,ndc_codes,rx_vars=c(),db_con,collect_n=Inf){
+get_rx_data <- function(source,year,ndc_codes,rx_vars=NULL,db_con,collect_n=Inf){
 
   checkmate::assert_choice(source, c("ccae", "mdcr"))
   checkmate::assertVector(ndc_codes)
