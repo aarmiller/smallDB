@@ -205,11 +205,12 @@ gether_dx_keys <- function(collect_tab=collect_table(),dx_list,db_con){
 #' @param rx_vars variables to collect. Default is rx_vars = c("enrolid","ndcnum","svcdate")
 #' @param db_con a connection to a database,
 #' @param collect_n the number of rows to collect
+#' @param ignore_keys a logical indicator of whether to ignore RX keys when returning the data
 #'
 #' @export
 gether_rx_keys <- function(collect_tab=collect_table(), ndc_codes,
                            rx_vars=c("enrolid","ndcnum","svcdate"), db_con,
-                           collect_n=Inf){
+                           collect_n=Inf, ignore_keys=FALSE){
 
   tmp_ndc_data <- collect_tab %>%
     filter(setting == "rx") %>%
@@ -222,6 +223,10 @@ gether_rx_keys <- function(collect_tab=collect_table(), ndc_codes,
                                                    collect_n = collect_n))) %>%
     dplyr::select(.data$rx_data) %>%
     tidyr::unnest(cols = c("rx_data"))
+  
+  if (ignore_keys == TRUE) {
+    return(tmp_ndc_data)
+  }
 
   tmp_rx_keys <- db_con %>%
     dplyr::tbl("rx_keys") %>%

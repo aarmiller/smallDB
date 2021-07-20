@@ -2,7 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-build_script.R
+build_steps.R
 .DS_Store
 smallDB.Rproj
 examples

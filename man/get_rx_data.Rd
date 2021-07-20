@@ -4,7 +4,7 @@
 \alias{get_rx_data}
 \title{Get RX visits for a set of NDC codes}
 \usage{
-get_rx_data(source, year, ndc_codes, rx_vars = c(), db_con, collect_n = Inf)
+get_rx_data(source, year, ndc_codes, rx_vars = NULL, db_con, collect_n = Inf)
 }
 \arguments{
 \item{source}{ccae or mdcr}
@@ -14,7 +14,7 @@ get_rx_data(source, year, ndc_codes, rx_vars = c(), db_con, collect_n = Inf)
 \item{ndc_codes}{a vector of ndc codes to lookup}
 
 \item{rx_vars}{variables to collect from the rx table. If no variable names are provided
-all variables in the rx table are returned. Default is rx_vars = c()}
+all variables in the rx table are returned. Default is rx_vars = NULL}
 
 \item{db_con}{a connection to a database,}
 

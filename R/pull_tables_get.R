@@ -70,7 +70,7 @@ get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 #' @param year year (as integer value)
 #' @param ndc_codes a vector of ndc codes to lookup
 #' @param rx_vars variables to collect from the rx table. If no variable names are provided
-#' all variables in the rx table are returned. Default is rx_vars = c()
+#' all variables in the rx table are returned. Default is rx_vars = NULL
 #' @param db_con a connection to a database,
 #' @param collect_n the number of rows to collect
 #'
@@ -81,7 +81,7 @@ get_rx_data <- function(source,year,ndc_codes,rx_vars=NULL,db_con,collect_n=Inf)
   checkmate::assertVector(ndc_codes)
 
   tbl_name <- glue::glue("rx_core_{source}_{year}")
-  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars()
+  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
 
   if (is.null(rx_vars)){
     get_vars <- get_vars

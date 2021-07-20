@@ -9,7 +9,8 @@ gether_rx_keys(
   ndc_codes,
   rx_vars = c("enrolid", "ndcnum", "svcdate"),
   db_con,
-  collect_n = Inf
+  collect_n = Inf,
+  ignore_keys = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ gether_rx_keys(
 \item{db_con}{a connection to a database,}
 
 \item{collect_n}{the number of rows to collect}
+
+\item{ignore_keys}{a logical indicator of whether to ignore RX keys when returning the data}
 }
 \description{
 Gather (gether) rx data from all tables defined in a collection tab

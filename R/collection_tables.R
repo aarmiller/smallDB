@@ -21,7 +21,7 @@ collect_table <- function(settings = c("inpatient","outpatient","rx"),sources = 
                           years=1:20, medicaid_years = NULL) {
 
   # convert years to stings
-  years <- stringr::str_pad(c(1:20),2,pad="0")
+  years <- stringr::str_pad(years,2,pad="0")
 
   out <- tibble::tibble(setting=settings) %>%
     dplyr::mutate(source=purrr::map(.data$setting,~sources)) %>%
