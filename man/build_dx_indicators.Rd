@@ -4,7 +4,12 @@
 \alias{build_dx_indicators}
 \title{Build diagnosis indicators corresponding to a list of diagnoses}
 \usage{
-build_dx_indicators(condition_dx_list, db_con, collect_tab = collect_table())
+build_dx_indicators(
+  condition_dx_list,
+  db_con,
+  collect_tab = collect_table(),
+  return_keys_only = FALSE
+)
 }
 \arguments{
 \item{condition_dx_list}{a named list of icd9 and icd10 codes. Each condition should be named
@@ -14,6 +19,8 @@ and icd9_codes and icd10_codes should be stored as a named sub-list for each con
 
 \item{collect_tab}{(optional) a collection table. This argument is only used to make temporary,
 visit keys if no keys are found in the database}
+
+\item{return_keys_only}{Logical to return only the  visit keys containing specific diagnosis codes}
 }
 \value{
 a tibble containing keys and indicators for each condition

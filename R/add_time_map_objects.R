@@ -13,20 +13,30 @@
 #' @param db_con connection to the small database
 #' @param collect_tab (optional) a collection table. This argument is only used to make temporary,
 #' visit keys if no keys are found in the database
+#' @param return_keys_only Logical to return only the  visit keys containing specific diagnosis codes
 #' @return a tibble containing keys and indicators for each condition
 #' @export
-build_dx_indicators <- function(condition_dx_list,db_con,collect_tab=collect_table()){
+build_dx_indicators <- function(condition_dx_list,db_con,collect_tab=collect_table(),
+                                return_keys_only = FALSE){
 
   if (!any(DBI::dbListTables(db_con) %in% c("outpatient_keys","inpatient_keys"))){
     warning("Database contains no visit keys. Temporary visit keys were generated using the collection table specified.")
     add_time_map_keys(collect_tab=collect_tab,db_con = db_con,temporary = TRUE)
   }
 
-  all_cond_codes <- list(icd9_codes=purrr::map(condition_dx_list,~.$icd9_codes) %>% unlist(use.names = F),
+  if (return_keys_only == FALSE){
+    all_cond_codes <- list(icd9_codes=purrr::map(condition_dx_list,~.$icd9_codes) %>% unlist(use.names = F),
                          icd10_codes=purrr::map(condition_dx_list,~.$icd10_codes) %>% unlist(use.names = F))
-
+  } else {
+    all_cond_codes <- condition_dx_list
+  }
+  
   cond_keys <- gether_dx_keys(collect_tab = collect_tab,dx_list = all_cond_codes,db_con = db_con)
 
+  if (return_keys_only == TRUE){
+    return(cond_keys)
+  }
+  
   cond_keys_name <- tibble::tibble(name=names(condition_dx_list)) %>%
     dplyr::mutate(dx=purrr::map(.data$name,~condition_dx_list[[.]] %>% unlist())) %>%
     tidyr::unnest(cols = c(dx)) %>%

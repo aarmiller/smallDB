@@ -26,7 +26,7 @@ get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
 
   out <- db_con %>%
     dplyr::tbl(tbl_name) %>%
-    dplyr::select(get_vars) %>%
+    dplyr::select(all_of(get_vars)) %>%
     dplyr::collect(n=collect_n)
 
   return(out)
@@ -92,7 +92,7 @@ get_rx_data <- function(source,year,ndc_codes,rx_vars=NULL,db_con,collect_n=Inf)
   out <- db_con %>%
     dplyr::tbl(tbl_name) %>%
     dplyr::filter(.data$ndcnum %in% ndc_codes) %>%
-    dplyr::select(get_vars) %>%
+    dplyr::select(all_of(get_vars)) %>%
     dplyr::collect(n=collect_n)
 
   return(out)
