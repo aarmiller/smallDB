@@ -13,7 +13,7 @@
 #' @export
 get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
   checkmate::assert_choice(setting, c("inpatient", "outpatient"))
-  checkmate::assert_choice(source, c("ccae", "mdcr"))
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
 
   tbl_name <- glue::glue("{setting}_core_{source}_{year}")
   get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
@@ -47,7 +47,7 @@ get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
 #' @export
 get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 
-  checkmate::assert_choice(source, c("ccae", "mdcr"))
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
 
   tbl_name <- glue::glue("rx_core_{source}_{year}")
 
@@ -77,7 +77,7 @@ get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 #' @export
 get_rx_data <- function(source,year,ndc_codes,rx_vars=NULL,db_con,collect_n=Inf){
 
-  checkmate::assert_choice(source, c("ccae", "mdcr"))
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
   checkmate::assertVector(ndc_codes)
 
   tbl_name <- glue::glue("rx_core_{source}_{year}")
