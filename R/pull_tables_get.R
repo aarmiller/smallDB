@@ -16,7 +16,7 @@ get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
   checkmate::assert_choice(source, c("ccae", "mdcr"))
 
   tbl_name <- glue::glue("{setting}_core_{source}_{year}")
-  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars()
+  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
 
   if (is.null(vars)){
     get_vars <- get_vars
