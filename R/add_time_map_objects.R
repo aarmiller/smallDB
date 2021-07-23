@@ -86,7 +86,7 @@ build_rx_indicators <- function(rx_list,db_con,collect_tab=collect_table()){
   rx_inds <- tibble::enframe(rx_list) %>%
     tidyr::unnest(value) %>%
     dplyr::rename(ndcnum=value) %>%
-    dplyr::inner_join(code_keys) %>%
+    dplyr::inner_join(code_keys, by = "ndcnum") %>%
     dplyr::distinct(name,key) %>%
     dplyr::mutate(ind=1L) %>%
     tidyr::pivot_wider(names_from = name,values_from = ind,

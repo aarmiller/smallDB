@@ -13,10 +13,10 @@
 #' @export
 get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
   checkmate::assert_choice(setting, c("inpatient", "outpatient"))
-  checkmate::assert_choice(source, c("ccae", "mdcr"))
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
 
   tbl_name <- glue::glue("{setting}_core_{source}_{year}")
-  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars()
+  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
 
   if (is.null(vars)){
     get_vars <- get_vars
@@ -47,7 +47,7 @@ get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
 #' @export
 get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 
-  checkmate::assert_choice(source, c("ccae", "mdcr"))
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
 
   tbl_name <- glue::glue("rx_core_{source}_{year}")
 
@@ -77,7 +77,7 @@ get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 #' @export
 get_rx_data <- function(source,year,ndc_codes,rx_vars=NULL,db_con,collect_n=Inf){
 
-  checkmate::assert_choice(source, c("ccae", "mdcr"))
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
   checkmate::assertVector(ndc_codes)
 
   tbl_name <- glue::glue("rx_core_{source}_{year}")
@@ -97,4 +97,38 @@ get_rx_data <- function(source,year,ndc_codes,rx_vars=NULL,db_con,collect_n=Inf)
 
   return(out)
 
+}
+
+#' Collect table data
+#'
+#' Collect data from a generic table
+#'
+#' @param table table to collect variables from
+#' @param source ccae, mdcr or medicaid
+#' @param year year (as integer value)
+#' @param vars a vector of variables to collect. If NULL all variables in a table will be returned
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#' @return A tibble of variables from the respective table
+#'
+#' @export
+get_table_data <- function(table,source,year,vars=NULL,db_con,collect_n=Inf){
+  
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
+  
+  tbl_name <- glue::glue("{table}_{source}_{year}")
+  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
+  
+  if (is.null(vars)){
+    get_vars <- get_vars
+  } else {
+    get_vars <- vars[vars %in% get_vars]
+  }
+  
+  out <- db_con %>%
+    dplyr::tbl(tbl_name) %>%
+    dplyr::select(all_of(get_vars)) %>%
+    dplyr::collect(n=collect_n)
+  
+  return(out)
 }

@@ -29,25 +29,22 @@ build_time_map_keys <- function(collect_tab=collect_table(), db_con){
 
     # clean inpatient visits
     temp.in <- temp.in %>%
-      dplyr::mutate(ccae=ifelse(source=="ccae",1L,0L)) %>%
-      dplyr::select("year","ccae","core_data") %>%
+      dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                         ifelse(source=="mdcr",2L,3L))) %>%
+      dplyr::select("year","source_type","core_data") %>%
       tidyr::unnest(cols = c(core_data)) %>%
       dplyr::mutate(disdate=ifelse(is.na(.data$disdate),.data$admdate+.data$los,.data$disdate),
-                    inpatient = 1L,
-                    source = "inpatient",
-                    rx = 0L) %>%
+                    setting_type=5L) %>%
       dplyr::select(-.data$los)
 
   } else {
     temp.in <- tibble::tibble(year = character(),
-                              ccae = integer(),
+                              source_type = integer(),
                               caseid = integer(),
                               enrolid = integer(),
-                              source = character(),
                               admdate = integer(),
                               disdate = integer(),
-                              inpatient = integer(),
-                              rx = integer())
+                              setting_type = integer())
   }
 
   # collect outpatient visits
@@ -62,30 +59,28 @@ build_time_map_keys <- function(collect_tab=collect_table(), db_con){
 
     # clean outpatient visits
     temp.out <- temp.out %>%
-      dplyr::mutate(ccae=ifelse(source=="ccae",1L,0L)) %>%
-      dplyr::select("year","ccae","core_data") %>%
+      dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                         ifelse(source=="mdcr",2L,3L))) %>%
+      dplyr::select("year","source_type","core_data") %>%
       mutate(core_data = map(core_data, ~mutate(., procgrp = as.character(procgrp),
                                                 stdprov = as.character(stdprov)))) %>%
       tidyr::unnest(cols = c(core_data)) %>%
       dplyr::mutate(disdate = .data$svcdate,
                     admdate = .data$svcdate,
-                    inpatient = 0L,
-                    rx = 0L) %>%
+                    setting_type = 1L) %>%
       dplyr::select(-.data$svcdate)
     
     # Identify visits
-    temp.out <-  add_ed_indicator(temp.out)
+    temp.out <-  add_ed_obs_indicator(temp.out)
     
   } else {
     temp.out <- tibble::tibble(year = character(),
-                               ccae = integer(),
+                               source_type = integer(),
                                enrolid = integer(),
                                stdplac = integer(),
-                               source = character(),
                                admdate = integer(),
                                disdate = integer(),
-                               inpatient = integer(),
-                               rx = integer())
+                               setting_type = integer())
   }
 
   # Collect RX visits
@@ -98,51 +93,48 @@ build_time_map_keys <- function(collect_tab=collect_table(), db_con){
 
     # clean rx visits
     temp.rx <- temp.rx %>%
-      dplyr::mutate(ccae=ifelse(source=="ccae",1L,0L)) %>%
-      dplyr::select("year","ccae","rx_data") %>%
+      dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                         ifelse(source=="mdcr",2L,3L))) %>%
+      dplyr::select("year","source_type","rx_data") %>%
       tidyr::unnest(cols = c(rx_data)) %>%
       dplyr::mutate(disdate = .data$svcdate,
                     admdate = .data$svcdate,
-                    source = "rx",
-                    inpatient = 0L,
-                    rx = 1L) %>%
+                    setting_type = 4L) %>%
       dplyr::select(-.data$svcdate)
 
   } else {
 
     temp.rx <- tibble::tibble(year = character(),
-                              ccae = integer(),
+                              source_type = integer(),
                               enrolid = integer(),
                               stdplac = integer(),
-                              source = character(),
                               admdate = integer(),
                               disdate = integer(),
-                              inpatient = integer(),
-                              rx = integer())
+                              setting_type = integer())
   }
 
   # assemble time_map
   temp_time_map <- dplyr::bind_rows(temp.in,temp.out,temp.rx) %>%
-    dplyr::arrange(.data$enrolid, .data$admdate,.data$inpatient, .data$rx) %>%
-    dplyr::mutate(key=dplyr::row_number()) %>% 
-    dplyr::mutate_at(vars(inpatient, rx),~ifelse(is.na(.),0L,.))
-
+    dplyr::arrange(.data$enrolid, .data$admdate,.data$setting_type) %>%
+    dplyr::mutate(key=dplyr::row_number()) 
+  
+  
   # get distinct outpatient keys
   out_keys <- temp_time_map %>%
-    dplyr::filter(.data$inpatient==0 & .data$rx==0) %>%
-    dplyr::select("year","ccae","enrolid","stdplac", "source",
+    dplyr::filter(.data$setting_type %in% 1:3) %>%
+    dplyr::select("year","source_type","enrolid","stdplac", "setting_type",
                   "svcdate"="admdate","key")
-
+  
   # get distinct inpatient keys
   in_keys <- temp_time_map %>%
-    dplyr::filter(.data$inpatient==1) %>%
-    dplyr::select("year","ccae","enrolid","admdate", "source",
-                  "disdate","caseid","key")
-
+    dplyr::filter(.data$setting_type==5) %>%
+    dplyr::select("year","source_type","enrolid","admdate",
+                  "disdate","caseid","setting_type","key")
+  
   # get distinct rx keys
   rx_keys <- temp_time_map %>%
-    dplyr::filter(.data$inpatient==0 & .data$rx==1) %>%
-    dplyr::select("year","ccae","enrolid","svcdate"="admdate","key", "source",)
+    dplyr::filter(.data$setting_type==4) %>%
+    dplyr::select("year","source_type","enrolid","svcdate"="admdate","key", "setting_type")
 
   return(list(time_map = temp_time_map,
               out_keys = out_keys,
@@ -219,31 +211,25 @@ build_time_map <- function(db_con,collect_tab=collect_table()){
   dat <- rbind(db_con %>%
                  dplyr::tbl("outpatient_keys") %>%
                  dplyr::collect(n=Inf) %>%
-                 dplyr::mutate(disdate=.data$svcdate,
-                               inpatient=0L,
-                               rx=0L) %>%
-                 dplyr::select("key","year","ccae","enrolid","admdate"="svcdate",
-                               "disdate","inpatient","rx","stdplac", "source"),
+                 dplyr::mutate(disdate=.data$svcdate) %>%
+                 dplyr::select("key","year","source_type","enrolid","admdate"="svcdate",
+                               "disdate","stdplac", "setting_type"),
 
                db_con %>%
                  dplyr::tbl("rx_keys") %>%
                  dplyr::collect(n=Inf) %>%
                  dplyr::mutate(disdate=.data$svcdate,
-                               inpatient=0L,
-                               stdplac=-2L,
-                               rx=1L) %>%
-                 dplyr::select("key","year","ccae","enrolid","admdate"="svcdate",
-                               "disdate","inpatient","rx","stdplac", "source"),
+                               stdplac=-2L) %>%
+                 dplyr::select("key","year","source_type","enrolid","admdate"="svcdate",
+                               "disdate","stdplac","setting_type"),
 
                db_con %>%
                  dplyr::tbl("inpatient_keys") %>%
                  dplyr::select(-.data$caseid) %>%
                  dplyr::collect(n=Inf) %>%
-                 dplyr::mutate(inpatient=1L,
-                               stdplac=-1L,
-                               rx=0L) %>%
+                 dplyr::mutate(stdplac=-1L) %>%
                  dplyr::select(.data$key,dplyr::everything())) %>%
-    dplyr::arrange(.data$enrolid, .data$admdate, .data$inpatient, .data$rx)
+    dplyr::arrange(.data$enrolid, .data$admdate, .data$setting_type)
 
   return(dat)
 }

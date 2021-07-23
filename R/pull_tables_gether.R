@@ -168,11 +168,12 @@ gether_dx_keys <- function(collect_tab=collect_table(),dx_list,db_con){
     dplyr::tbl("inpatient_keys") %>%
     dplyr::collect(n=Inf) %>%
     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid)) %>%
-    dplyr::select(.data$ccae,.data$year,.data$caseid,.data$key) %>%
+    dplyr::select(.data$source_type,.data$year,.data$caseid,.data$key) %>%
     dplyr::inner_join(in_temp %>%
-                        dplyr::mutate(ccae=ifelse(source=="ccae",1L,0L)) %>%
+                        dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                                           ifelse(source=="mdcr",2L,3L))) %>% 
                         tidyr::unnest(cols = c(data)),
-                      by = c("ccae", "year", "caseid")) %>%
+                      by = c("source_type", "year", "caseid")) %>%
     dplyr::select(.data$dx,.data$key)
 
   ## Merge outpatient keys
@@ -240,5 +241,34 @@ gether_rx_keys <- function(collect_tab=collect_table(), ndc_codes,
   return(out)
 }
 
+
+#' Gather (gether) data from all tables defined in a collection tab
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab a collection table
+#' @param table name of table to collect data from
+#' @param vars variables to collect
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#'
+#' @export
+gether_table_data <- function(collect_tab=collect_table(),table,vars=c(),db_con,collect_n=Inf){
+  
+  # correct the collection table
+  collect_tab <- collect_tab %>% 
+    mutate(table = table) %>% 
+    distinct(table,source,year)
+  
+  collect_tab %>%
+    dplyr::mutate(table_data=purrr::pmap(list(.data$table,.data$source,.data$year),
+                                         ~get_table_data(table = ..1,
+                                                         source = ..2,
+                                                         year = ..3,
+                                                         vars = vars,
+                                                         db_con = db_con,
+                                                         collect_n = collect_n)))
+  
+}
 
 
