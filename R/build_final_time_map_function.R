@@ -23,91 +23,115 @@ build_final_time_map <- function (condition_short_name, duration_prior_to_index 
                                   cohort_path, ssd_list){
 
     #update all_dx to include dx date instead of time to dx (this is necessary as index dates are shifted do time to dx needs to be recalculated)
-    all_dx <- all_dx  %>%
-    inner_join(index_data %>% select(enrolid, index_date)) %>%
-    mutate(visit_date = index_date + days_since_index) %>%
-    select(-days_since_index, - index_date)
+    all_dx <- all_dx  %>% dplyr::inner_join(index_data %>% select(enrolid, index_date),
+                                     by = "enrolid") %>%
+      dplyr::mutate(visit_date = index_date + days_since_index) %>%
+      dplyr::select(-days_since_index, - index_date)
 
     # Get subset of enrolids that will be used in the analysis
-    final_cohort <- read_rds(path= cohort_path)
+    final_cohort <- readr::read_rds(path= cohort_path)
 
     index_data <- final_cohort %>%
-      mutate(time_before_index = index_date - first_enroll) %>%
-      select(enrolid, index_date , enroll_first = first_enroll, time_before_index, first_dx_source = index_dx_source, stdplac, key)
+      dplyr::mutate(time_before_index = index_date - first_enroll) %>%
+      dplyr:: select(enrolid, index_date , enroll_first = first_enroll, time_before_index, first_dx_source = index_dx_source, stdplac, key)
 
     #update all_dx to include adjusted days_since_index using new index dates also select for enrolids in cohort
     all_dx <- all_dx  %>%
-      inner_join(index_data %>% select(enrolid, index_date)) %>%
-      mutate(days_since_index = visit_date - index_date) %>%
-      select(-visit_date, - index_date)
+      dplyr::inner_join(index_data %>% select(enrolid, index_date),
+                        by = "enrolid") %>%
+      dplyr::mutate(days_since_index = visit_date - index_date) %>%
+      dplyr::select(-visit_date, -index_date)
 
     # select for enroilid that were enrolled >=duration_prior_to_index days prior to index
-    enrolled_ge_1year <- index_data %>% filter(time_before_index >= duration_prior_to_index) %>% distinct(enrolid) %>% .$enrolid
-    index_data <- index_data %>% filter(time_before_index >= duration_prior_to_index)
-    dx_data <- all_dx %>% filter(enrolid %in% enrolled_ge_1year) %>% rename(days_since_dx=days_since_index) %>%
-      filter(between(days_since_dx,-duration_prior_to_index,0))
-    rx_data <- all_rx %>% inner_join(index_data %>% select(enrolid, index_date)) %>%
-      mutate(days_since_rx = rx_date - index_date) %>%
-      filter(between(days_since_rx,-duration_prior_to_index,0)) %>% select(enrolid, rx, days_since_rx)
+    enrolled_ge_1year <- index_data %>% 
+      dplyr::filter(time_before_index >= duration_prior_to_index) %>%
+      dplyr::distinct(enrolid) %>% .$enrolid
+    
+    index_data <- index_data %>% 
+      dplyr::filter(time_before_index >= duration_prior_to_index)
+    
+    dx_data <- all_dx %>% 
+      dplyr::filter(enrolid %in% enrolled_ge_1year) %>%
+      dplyr::rename(days_since_dx=days_since_index) %>%
+      dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0))
+    
+    rx_data <- all_rx %>% 
+      dplyr::inner_join(index_data %>% select(enrolid, index_date), by = "enrolid") %>%
+      dplyr::mutate(days_since_rx = rx_date - index_date) %>%
+      dplyr::filter(dplyr::between(days_since_rx,-duration_prior_to_index,0)) %>% 
+      dplyr::select(enrolid, rx, days_since_rx)
 
     # build timemap
-    time_map <- build_time_map(db_con = db_con, 
+    time_map <- smallDB::build_time_map(db_con = db_con, 
                                collect_tab = collect_tab)
     gc()
 
     # subset TB timemap to cases of interest
-    time_map <- time_map %>% inner_join(index_data %>%
-                                          distinct(enrolid, index_date))
+    time_map <- time_map %>% 
+      dplyr::inner_join(index_data %>%
+                          distinct(enrolid, index_date),
+                        by = "enrolid")
+    
     # add first_dx visit
-    time_map <-  time_map %>% left_join(index_data %>%
-                                          select(enrolid, admdate = index_date, source = first_dx_source, stdplac, key) %>%
-                                          mutate(first_dx = 1)) %>%
-      mutate(first_dx = ifelse(is.na(first_dx), 0, first_dx))
+    time_map <-  time_map %>%
+      dplyr::filter(!is.na(setting_type)) %>% 
+      dplyr::mutate(setting_type = smallDB::setting_type_labels(.$setting_type)) %>%
+      dplyr::left_join(index_data %>%
+                         dplyr::select(enrolid, admdate = index_date,
+                                       setting_type = first_dx_source, 
+                                       stdplac, key) %>%
+                         dplyr::mutate(first_dx = 1),
+                by = c("key", "enrolid", "admdate", "stdplac", "setting_type")) %>%
+      dplyr::mutate(first_dx = ifelse(is.na(first_dx), 0, first_dx))
 
     # create inpatient, ED, and outpatient indicators
-    time_map <- time_map %>% mutate(ind = 1L) %>% distinct() %>% filter(!is.na(source)) %>%
-      spread(key = source, value = ind) %>%
-      mutate_at(vars(ed, inpatient, outpatient, rx),~ifelse(is.na(.),0L,.))
+    time_map <- time_map %>% 
+      dplyr::mutate(ind = 1L) %>% 
+      dplyr::distinct() %>% 
+      dplyr::filter(!is.na(setting_type)) %>%
+      tidyr::spread(key = setting_type, value = ind) %>%
+      dplyr::mutate_at(vars(ed, inpatient, outpatient, rx,  obs_stay),~ifelse(is.na(.),0L,.))
 
     # compute time to first diagnosis
     time_map <- time_map %>%
-      group_by(enrolid) %>%
-      arrange(enrolid, admdate) %>%
-      mutate(days_since_dx= admdate - index_date) %>%
-      mutate(visit_no=row_number()) %>%
-      ungroup()
+      dplyr::group_by(enrolid) %>%
+      dplyr::arrange(enrolid, admdate) %>%
+      dplyr::mutate(days_since_dx= admdate - index_date) %>%
+      dplyr::mutate(visit_no=row_number()) %>%
+      dplyr::ungroup()
 
-    ssd_inds <- build_dx_indicators(condition_dx_list = ssd_list,
-                                    collect_tab = collect_tab,
-                                    db_con = db_con) %>%
+    ssd_inds <- smallDB::build_dx_indicators(condition_dx_list = ssd_list,
+                                             collect_tab = collect_tab,
+                                             db_con = db_con) %>%
       mutate(any_ssd=1L)
 
 
     # Make final timemap with condition indicators
     # extract names of the condition indicators
     ind_names <- ssd_inds %>%
-      select(-key) %>%
+      dplyr::select(-key) %>%
       names()
 
     # add indicators to time_map
     final_time_map <- time_map %>%
-      left_join(ssd_inds, by="key") %>%
-      mutate_at(vars(all_of(ind_names)),.funs = list(~ifelse(is.na(.),0L,.)))
+      dplyr::left_join(ssd_inds, by="key") %>%
+      dplyr:: mutate_at(dplyr::vars(dplyr::all_of(ind_names)),.funs = list(~ifelse(is.na(.),0L,.)))
 
     # filter timemap to period of interest before diagnosis
     final_time_map <- final_time_map %>%
-      filter(between(days_since_dx,-duration_prior_to_index,0))
+      dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0))
 
     # get distinct visit (distinct enrolid, days_since_dx, std_place). If on a given "distinct" visit, if it was labeled
     # as both and outpatient and ED, it should be labeled as an ED visit and not an outpatient visit.
-      vars_to_summarise <- c("inpatient", "ed", "rx", "first_dx", ind_names)
+    # what to do with obs_stay?
+    vars_to_summarise <- c("inpatient", "ed", "rx", "obs_stay", "first_dx", ind_names)
 
-      final_time_map <- final_time_map %>%
-        group_by(enrolid, days_since_dx, stdplac) %>%
-        summarise_at(vars(all_of(vars_to_summarise)),.funs = list(~max(.))) %>%
-        ungroup() %>%
-        mutate(outpatient = ifelse(inpatient == 0 & ed == 0 & rx == 0 , 1, 0)) %>%
-        mutate(all_visits = 1)
+    final_time_map <- final_time_map %>%
+      dplyr::group_by(enrolid, days_since_dx, stdplac) %>%
+      dplyr::summarise_at(dplyr::vars(dplyr::all_of(vars_to_summarise)),.funs = list(~max(.))) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(outpatient = ifelse(inpatient == 0 & ed == 0 & rx == 0 & obs_stay == 0, 1, 0)) %>% 
+      dplyr::mutate(all_visits = 1)
 
   return(list(final_time_map = final_time_map,
               index_data = index_data,
