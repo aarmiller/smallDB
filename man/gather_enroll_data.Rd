@@ -2,15 +2,14 @@
 % Please edit documentation in R/demographic_functions.R
 \name{gather_enroll_data}
 \alias{gather_enroll_data}
-\title{Get enrollment data over multiple "enrollees" tables (in parallel)}
+\title{Get enrollment data over multiple "enrollees" tables}
 \usage{
 gather_enroll_data(
   collect_tab = collect_table(),
   enrolid_list,
   collect_n = Inf,
   vars = c("dobyr", "sex"),
-  db_path,
-  num_cores = NULL
+  db_con
 )
 }
 \arguments{
@@ -19,24 +18,22 @@ Default is all possible combinations of setting, source, and year}
 
 \item{enrolid_list}{A list of enrolids for which enrollment data will be collected}
 
-\item{collect_n}{The number of observations to return}
+\item{collect_n}{The number of observations to return
+is the smallest value between number of rows in for collect_tab or detected number of cores - 1}
 
 \item{vars}{Vector of specific variables of interest in the "enrollees" tables (e.g. c("dobyr", "sex"))}
 
-\item{db_path}{Path to the database}
-
-\item{num_cores}{The number of worker cores to use. If not specified will determined the number of cores based on the which ever
-is the smallest value between number of rows in for collect_tab or detected number of cores - 1}
+\item{db_con}{A connection to a database}
 }
 \value{
 A tibble with information on each enrolid in enrolid_list. The number of columns in the tibble depends on
 the number of vars selected
 }
 \description{
-Get enrollment data over multiple "enrollees" tables (in parallel)
+Get enrollment data over multiple "enrollees" tables
 }
 \examples{
 
-out <- gather_enroll_data(enrolid_list = final_cohort$enrolid, db_path = db_path, vars = c("dobyr", "sex"))
+out <- gather_enroll_data(enrolid_list = final_cohort$enrolid, db_con = db_con, vars = c("dobyr", "sex"))
 
 }

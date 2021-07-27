@@ -5,14 +5,17 @@
 \title{Builds a time map containing visit specific information for a specific condition and cohort.}
 \usage{
 build_final_time_map(
+  time_map = NULL,
   condition_short_name,
   duration_prior_to_index = 365L,
-  collect_tab = collect_table(),
+  collect_tab = smallDB::collect_table(),
   cohort_path,
   ssd_list
 )
 }
 \arguments{
+\item{time_map}{A time map that is already created. If NULL then it will create a time map. Default is NULL.}
+
 \item{condition_short_name}{The condition of interest. Specifically the short_name version of the condition}
 
 \item{duration_prior_to_index}{How far from the index should the time map extend back (e.g. 90, 180, 365)}
@@ -21,9 +24,9 @@ build_final_time_map(
 
 \item{cohort_path}{Path to the specific cohort for the condition of interest#'}
 
-\item{ssd_list}{A list of diagnosis codes of interest. The diagnosis codes need to be seperated into
+\item{ssd_list}{A list of diagnosis codes of interest. The diagnosis codes need to be separated into
 diagnosis categories (e.g. cough, fever, etc.). Additionally, within the categories, diagnosis codes should be seperated into ICD 9 and
-ICD 10 specific codes, with list elements labled as icd9_codes and icd10_codes}
+ICD 10 specific codes, with list elements labeled as icd9_codes and icd10_codes}
 }
 \value{
 A tibble with all the specified diagnosis codes and the corresponding visit key where the diagnosis codes appeared
