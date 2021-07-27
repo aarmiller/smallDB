@@ -5,9 +5,9 @@
 #' @param duration_prior_to_index How far from the index should the time map extend back (e.g. 90, 180, 365)
 #' @param cohort_path Path to the specific cohort for the condition of interest#' 
 #' @param collect_tab a collection table to build time_map from. By default all years will be used
-#' @param ssd_list A list of diagnosis codes of interest. The diagnosis codes need to be seperated into
+#' @param ssd_list A list of diagnosis codes of interest. The diagnosis codes need to be separated into
 #' diagnosis categories (e.g. cough, fever, etc.). Additionally, within the categories, diagnosis codes should be seperated into ICD 9 and
-#' ICD 10 specific codes, with list elements labled as icd9_codes and icd10_codes
+#' ICD 10 specific codes, with list elements labeled as icd9_codes and icd10_codes
 #' @return A tibble with all the specified diagnosis codes and the corresponding visit key where the diagnosis codes appeared
 #' @examples
 #' ssds <- read_rds("/Shared/Statepi_Diagnosis/params/ssd_codes/ssd_hsv_enceph.RDS")
@@ -36,7 +36,7 @@ build_final_time_map <- function (time_map = NULL,
 
     index_data <- final_cohort %>%
       dplyr::mutate(time_before_index = index_date - first_enroll) %>%
-      dplyr:: select(enrolid, index_date , enroll_first = first_enroll, time_before_index, first_dx_source = index_dx_source, stdplac, key)
+      dplyr::select(enrolid, index_date , enroll_first = first_enroll, time_before_index, first_dx_source = index_dx_source, stdplac, key)
 
     #update all_dx to include adjusted days_since_index using new index dates also select for enrolids in cohort
     all_dx <- all_dx  %>%
@@ -103,6 +103,7 @@ build_final_time_map <- function (time_map = NULL,
         dplyr::mutate(days_since_dx= admdate - index_date) %>%
         dplyr::mutate(visit_no=row_number()) %>%
         dplyr::ungroup()
+      warning("Time map was created as time map was not specified")
     } else {
       time_map <- time_map %>% 
         dplyr::inner_join(index_data %>%
