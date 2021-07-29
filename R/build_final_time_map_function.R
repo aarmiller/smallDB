@@ -32,7 +32,7 @@ build_final_time_map <- function (time_map = NULL,
       dplyr::select(-days_since_index, - index_date)
 
     # Get subset of enrolids that will be used in the analysis
-    final_cohort <- readr::read_rds(path= cohort_path)
+    final_cohort <- readr::read_rds(cohort_path)
 
     index_data <- final_cohort %>%
       dplyr::mutate(time_before_index = index_date - first_enroll) %>%
