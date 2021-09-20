@@ -60,6 +60,63 @@ get_rx_dates <- function(source,year,db_con,collect_n=Inf){
   return(out)
 }
 
+
+#' Get Procedure visits for a set of procedure codes
+#'
+#' This function collects dates for procedures
+#'
+#' @importFrom rlang .data
+#'
+#' @param source ccae, mdcr or medicaid
+#' @param year year
+#' @param proc_codes vector of procedure codes to pull visits for
+#' @param setting "inpatient" or "outpatient"
+#' @param tbl_vars names of variables to pull from corresponding tables. If NULL all tables
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#'
+#' @export
+get_proc_dates <- function(source,year,proc_codes,setting = "inpatient",tbl_vars=NULL,db_con,collect_n=Inf){
+  
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
+  checkmate::assert_choice(setting, c("inpatient", "outpatient"))
+  checkmate::assertVector(proc_codes)
+  
+  if (setting=="inpatient"){
+    tbl_name <- glue::glue("inpatient_proc_{source}_{year}") 
+  } else {
+    tbl_name <- glue::glue("outpatient_core_{source}_{year}")
+  }
+  
+  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
+  
+  if (is.null(tbl_vars)){
+    get_vars <- get_vars
+  } else {
+    get_vars <- tbl_vars[tbl_vars %in% get_vars]
+  }
+  
+  out <- db_con %>%
+    dplyr::tbl(tbl_name) 
+  
+  if (setting == "inpatient"){
+    out <- out %>% 
+      dplyr::filter(.data$proc %in% proc_codes) %>%
+      dplyr::select(all_of(get_vars)) %>%
+      dplyr::collect(n=collect_n) 
+    
+  } else {
+    out <- out %>% 
+      dplyr::filter(.data$proc1 %in% proc_codes) %>%
+      dplyr::select(all_of(get_vars)) %>%
+      dplyr::collect(n=collect_n) 
+  }
+  
+  return(out)
+  
+}
+
+
 #' Get RX visits for a set of NDC codes
 #'
 #' This function collects records that correspond to a set of NDC codes

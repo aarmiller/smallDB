@@ -272,3 +272,78 @@ gether_table_data <- function(collect_tab=collect_table(),table,vars=c(),db_con,
 }
 
 
+#' Gather visit keys associated with a set of visits for a particular diagnosis
+#'
+#' This function return a tibble of
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab A collection table
+#' @param proc_list A named list of icd9, icd10 and CPT procedure codes, with names of "icd9_codes" and
+#' "icd10_codes", respectively
+#' @param db_con A connection to the database
+#'
+#' @export
+gether_proc_keys <- function(collect_tab=collect_table(),proc_list,db_con){
+  
+  # combine procedure codes
+  proc_codes <- c(proc_list$icd9pcs_codes,
+                  proc_list$icd10pcs_codes,
+                  proc_list$cpt_codes)
+  
+  # pull inpatient procedures
+  tmp_in <- collect_tab %>% 
+    dplyr::filter(setting=="inpatient") %>% 
+    dplyr::mutate(data=purrr::map2(source,year,
+                                   ~get_proc_dates(source = .x,
+                                                  year = .y,
+                                                  proc_codes = proc_codes,
+                                                  setting = "inpatient",
+                                                  db_con = con,
+                                                  tbl_vars = c("caseid","proc"))))
+  
+  # merge in inpatient keys
+  in_keys <- tmp_in %>% 
+    tidyr::unnest(data) %>% 
+    dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                       ifelse(source=="mdcr",2L,3L))) %>% 
+    dplyr::select(year,source_type,caseid,proc) %>% 
+    dplyr::inner_join(tbl(con,"inpatient_keys") %>% 
+                        dplyr::select(.data$year,.data$source_type,.data$caseid,.data$key) %>% 
+                        dplyr::collect(n = Inf) %>% 
+                        dplyr::distinct(),
+               by = c("year", "source_type", "caseid")) %>% 
+    dplyr::select(.data$key,.data$proc)
+  
+  # pull outpatient procedures
+  tmp_out <- collect_table() %>% 
+    dplyr::filter(setting=="outpatient") %>% 
+    dplyr::mutate(data=purrr::map2(source,year,
+                                   ~get_proc_dates(source = .x,
+                                                  year = .y,
+                                                  proc_codes = proc_codes,
+                                                  setting = "outpatient",
+                                                  db_con = con,
+                                                  tbl_vars = c("enrolid","svcdate","stdplac","proc1"))))
+  
+  
+  # merge in outpatient keys
+  out_keys <- tmp_out %>% 
+    tidyr::unnest(data) %>% 
+    dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                       ifelse(source=="mdcr",2L,3L))) %>% 
+    dplyr::select(.data$enrolid,.data$source_type,.data$stdplac,.data$svcdate,proc=.data$proc1) %>% 
+    dplyr::inner_join(tbl(con,"outpatient_keys") %>% 
+                        dplyr::select(.data$enrolid,.data$source_type,.data$stdplac,.data$svcdate,.data$key) %>% 
+                        dplyr::collect(n=Inf),
+                      by = c("enrolid", "source_type", "stdplac", "svcdate")) %>% 
+    dplyr::select(.data$key,.data$proc)
+  
+  # combine keys
+  proc_keys <- dplyr::bind_rows(in_keys,
+                                out_keys)
+  
+  #### Return ####
+  return(proc_keys)
+}
+
