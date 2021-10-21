@@ -2,7 +2,7 @@
 % Please edit documentation in R/pull_tables_gether.R
 \name{gether_proc_keys}
 \alias{gether_proc_keys}
-\title{Gather visit keys associated with a set of visits for a particular diagnosis}
+\title{Gather visit keys associated with a set of visits for a particular procedure}
 \usage{
 gether_proc_keys(collect_tab = collect_table(), proc_list, db_con)
 }

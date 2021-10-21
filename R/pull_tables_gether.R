@@ -272,7 +272,7 @@ gether_table_data <- function(collect_tab=collect_table(),table,vars=c(),db_con,
 }
 
 
-#' Gather visit keys associated with a set of visits for a particular diagnosis
+#' Gather visit keys associated with a set of visits for a particular procedure
 #'
 #' This function return a tibble of
 #'
@@ -308,7 +308,7 @@ gether_proc_keys <- function(collect_tab=collect_table(),proc_list,db_con){
     dplyr::mutate(source_type = ifelse(source=="ccae",1L,
                                        ifelse(source=="mdcr",2L,3L))) %>% 
     dplyr::select(year,source_type,caseid,proc) %>% 
-    dplyr::inner_join(tbl(con,"inpatient_keys") %>% 
+    dplyr::inner_join(tbl(db_con,"inpatient_keys") %>% 
                         dplyr::select(.data$year,.data$source_type,.data$caseid,.data$key) %>% 
                         dplyr::collect(n = Inf) %>% 
                         dplyr::distinct(),
@@ -323,7 +323,7 @@ gether_proc_keys <- function(collect_tab=collect_table(),proc_list,db_con){
                                                   year = .y,
                                                   proc_codes = proc_codes,
                                                   setting = "outpatient",
-                                                  db_con = con,
+                                                  db_con = db_con,
                                                   tbl_vars = c("enrolid","svcdate","stdplac","proc1"))))
   
   
@@ -333,7 +333,7 @@ gether_proc_keys <- function(collect_tab=collect_table(),proc_list,db_con){
     dplyr::mutate(source_type = ifelse(source=="ccae",1L,
                                        ifelse(source=="mdcr",2L,3L))) %>% 
     dplyr::select(.data$enrolid,.data$source_type,.data$stdplac,.data$svcdate,proc=.data$proc1) %>% 
-    dplyr::inner_join(tbl(con,"outpatient_keys") %>% 
+    dplyr::inner_join(tbl(db_con,"outpatient_keys") %>% 
                         dplyr::select(.data$enrolid,.data$source_type,.data$stdplac,.data$svcdate,.data$key) %>% 
                         dplyr::collect(n=Inf),
                       by = c("enrolid", "source_type", "stdplac", "svcdate")) %>% 
@@ -346,4 +346,55 @@ gether_proc_keys <- function(collect_tab=collect_table(),proc_list,db_con){
   #### Return ####
   return(proc_keys)
 }
+
+
+#' Gather visit keys associated with a set of visits for a particular inpatient diagnosis
+#'
+#' This function return a tibble of
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab A collection table
+#' @param dx_list A named list of icd9 and icd10 codes, with names of "icd9_codes" and
+#' "icd10_codes", respectively
+#' @param dx_num a logical indicator of whether to collect diagnosis number. Default is TRUE.
+#' @param db_con A connection to the database
+#'
+#' @export
+gether_inpatient_dx_keys <- function(collect_tab=collect_table(),dx_list,dx_num=TRUE,db_con){
+  
+  # collect inpatient data
+  tmp_out <- collect_tab %>% 
+    dplyr::filter(setting=="inpatient") %>% 
+    dplyr::mutate(data=purrr::map2(source,year,
+                                   ~get_inpatient_dx_visits(source = .x,
+                                                            year = .y,
+                                                            dx_list = dx_list,
+                                                            dx_num = dx_num,
+                                                            db_con = db_con))) %>% 
+    dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                       ifelse(source=="mdcr",2L,3L))) %>% 
+    dplyr::select(source_type,year,data) %>% 
+    tidyr::unnest(data)
+  
+  # pull in inpatient keys
+  in_keys <- tbl(db_con,"inpatient_keys") %>% 
+    dplyr::select(year,source_type,caseid,key) %>% 
+    dplyr::collect(n = Inf)
+  
+  # merge inpatient keys and the visit data
+  if (dx_num == TRUE){
+    out <- tmp_out %>% 
+      dplyr::inner_join(in_keys,by = c("source_type", "year", "caseid")) %>% 
+      dplyr::select(dx,dx_num,key)
+  } else {
+    out <- tmp_out %>% 
+      dplyr::inner_join(in_keys,by = c("source_type", "year", "caseid")) %>% 
+      dplyr::select(dx,key)
+  }
+  
+  return(out)
+}
+
+
 

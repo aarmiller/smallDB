@@ -189,3 +189,72 @@ get_table_data <- function(table,source,year,vars=NULL,db_con,collect_n=Inf){
   
   return(out)
 }
+
+#' Collect inpatient diagnosis visits
+#'
+#' Collect inpatient visits for a particular diagnosis along with the diagnosis order
+#'
+#' @param source ccae, mdcr or medicaid
+#' @param year year (as integer value)
+#' @param dx_list A named list of icd9 and icd10 codes, with names of "icd9_codes" and
+#' "icd10_codes", respectively
+#' @param dx_num a logical indicator of whether to collect diagnosis number. Default is TRUE.
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#' @return A tibble of variables from the respective table
+#'
+#' @export
+get_inpatient_dx_visits <- function(source,year,dx_list,dx_num=TRUE,db_con,collect_n=Inf){
+
+checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
+
+icd9_codes <- dx_list %>% 
+  purrr::map(~.$icd9_codes) %>% 
+  unlist(use.names = FALSE) %>% 
+  unique()
+
+icd10_codes <- dx_list %>% 
+  purrr::map(~.$icd10_codes) %>% 
+  unlist(use.names = FALSE) %>% 
+  unique()
+
+if (as.integer(year)<=14){
+  
+  tbl_name <- glue::glue("inpatient_dx_{source}_{year}")
+  
+  out <- db_con %>%
+    dplyr::tbl(tbl_name) %>%
+    dplyr::filter(dx %in% icd9_codes) %>% 
+    dplyr::collect(n=collect_n)
+  
+} else {
+  
+  tbl_name1 <- glue::glue("inpatient_dx9_{source}_{year}")
+  tbl_name2 <- glue::glue("inpatient_dx10_{source}_{year}")
+  
+  out1 <- db_con %>%
+    dplyr::tbl(tbl_name1) %>%
+    dplyr::filter(dx %in% icd9_codes) %>%
+    dplyr::collect(n=collect_n)
+  
+  out2 <- db_con %>%
+    dplyr::tbl(tbl_name2) %>%
+    dplyr::filter(dx %in% icd10_codes) %>%
+    dplyr::collect(n=collect_n)
+  
+  out <- rbind(out1,out2)
+  
+  
+}
+
+if (dx_num == FALSE){
+  out <- out %>% 
+    dplyr::select(caseid,dx) %>% 
+    dplyr::distinct()
+}
+
+return(out)
+}
+
+
+
