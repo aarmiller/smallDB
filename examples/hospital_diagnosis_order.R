@@ -10,7 +10,7 @@ library(smallDB)
 library(codeBuildr)
 
 # connect to database
-con <- DBI::dbConnect(RSQLite::SQLite(), "~/Data/cf/cf.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), "/Shared/AML/small_dbs/blasto/truven/blasto.db")
 
 # add keys to database, if not already done (uncomment if no keys)
 # add_time_map_keys(collect_tab = collect_table(medicaid_years = 14:18),
