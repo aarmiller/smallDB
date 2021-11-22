@@ -26,7 +26,7 @@ build_dx_indicators <- function(condition_dx_list,db_con,collect_tab=collect_tab
 
   if (return_keys_only == FALSE){
     all_cond_codes <- list(icd9_codes=purrr::map(condition_dx_list,~.$icd9_codes) %>% unlist(use.names = F),
-                         icd10_codes=purrr::map(condition_dx_list,~.$icd10_codes) %>% unlist(use.names = F))
+                           icd10_codes=purrr::map(condition_dx_list,~.$icd10_codes) %>% unlist(use.names = F))
   } else {
     all_cond_codes <- condition_dx_list
   }

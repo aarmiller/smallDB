@@ -57,6 +57,12 @@ gether_rx_dates <- function(collect_tab=collect_table(),db_con,collect_n=Inf){
 #'
 #' @export
 gether_dx_keys <- function(collect_tab=collect_table(),dx_list,db_con){
+  
+  
+  if (!("icd9_codes" %in% names(dx_list))) {
+    dx_list <- list(icd9_codes=purrr::map(condition_dx_list,~.$icd9_codes) %>% unlist(use.names = F),
+                    icd10_codes=purrr::map(condition_dx_list,~.$icd10_codes) %>% unlist(use.names = F))
+  }
 
   icd_9_codes <- dx_list$icd9_codes
   icd_10_codes <- dx_list$icd10_codes

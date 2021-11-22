@@ -20,6 +20,8 @@ con <- DBI::dbConnect(RSQLite::SQLite(), "~/Data/cf/cf.db")
 # build a time map
 tm <- build_time_map(db_con = con)
 
+tm %>% count(setting_type)
+
 
 # collect keys for inpatient CDI
 inpatient_cdi_keys <- gether_inpatient_dx_keys(collect_tab = collect_table(medicaid_years = 14:18),
