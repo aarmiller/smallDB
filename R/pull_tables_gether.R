@@ -404,3 +404,62 @@ gether_inpatient_dx_keys <- function(collect_tab=collect_table(),dx_list,dx_num=
 
 
 
+#' Gather all visit keys associated with a set of visits
+#'
+#' This function return a tibble of
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab A collection table
+#' @param dx_num a logical indicator of whether to collect diagnosis number. Default is TRUE.
+#' @param db_con A connection to the database
+#' @param primary whether or not to only return primary diagnoses, if TRUE forces dx_num to TRUE
+#'
+#' @export
+gether_all_inpatient_dx_keys <- function(collect_tab=collect_table(),dx_num=TRUE,db_con,keys,primary=FALSE){
+  
+  # collect inpatient data
+  tmp_out <- collect_tab %>% 
+    dplyr::filter(setting=="inpatient") %>% 
+    dplyr::mutate(data=purrr::map2(source,year,
+                                   ~get_all_inpatient_dx_visits(source = .x,
+                                                            year = .y,
+                                                            dx_num = dx_num,
+                                                            db_con = db_con))) %>% 
+    dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                       ifelse(source=="mdcr",2L,3L))) %>% 
+    dplyr::select(source_type,year,data) %>% 
+    tidyr::unnest(data)
+  
+  # pull in inpatient keys
+  in_keys <- tbl(db_con,"inpatient_keys") %>% 
+    dplyr::select(year,source_type,caseid,key) %>% 
+    dplyr::collect(n = Inf) %>%
+    filter(key %in% keys)
+  
+  # if primary true then force dx_num true
+  if (primary) {
+    dx_num <- TRUE
+  }
+  
+  # merge inpatient keys and the visit data
+  if (dx_num == TRUE){
+    out <- tmp_out %>% 
+      dplyr::inner_join(in_keys,by = c("source_type", "year", "caseid")) %>% 
+      dplyr::select(dx,dx_num,key)
+  } else {
+    out <- tmp_out %>% 
+      dplyr::inner_join(in_keys,by = c("source_type", "year", "caseid")) %>% 
+      dplyr::select(dx,key)
+  }
+  
+  if (primary) {
+    out <- out %>%
+      filter(dx_num == 1)
+  }
+  
+  return(out)
+}
+
+
+
