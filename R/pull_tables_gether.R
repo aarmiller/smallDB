@@ -461,5 +461,147 @@ gether_all_inpatient_dx_keys <- function(collect_tab=collect_table(),dx_num=TRUE
   return(out)
 }
 
+#' Gather all visit keys associated with a set of visits for a particular diagnosis
+#'
+#' This function return a tibble of
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab A collection table
+#' @param db_con A connection to the database
+#'
+#' @export
+gether_all_dx_keys <- function(collect_tab=collect_table(),db_con, keys){
+  
+  
+  ##### get inpatient diagnoses ####
+  in_temp1 <- collect_tab %>%
+    dplyr::filter(as.integer(.data$year)<15,
+                  setting == "inpatient") %>%
+    dplyr::mutate(data=purrr::map2(.data$source,.data$year,
+                                   ~dplyr::tbl(db_con,paste0("inpatient_dx_",.x,"_",.y)) %>%
+                                     dplyr::distinct(.data$caseid,.data$dx) %>%
+                                     dplyr::inner_join(dplyr::tbl(db_con,paste0("inpatient_core_",.x,"_",.y)) %>%
+                                                         dplyr::select(.data$caseid,.data$enrolid),
+                                                       by="caseid") %>%
+                                     dplyr::distinct(.data$enrolid,.data$caseid,.data$dx) %>%
+                                     dplyr::collect(n=Inf) %>%
+                                     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid))))
+  
+  in_temp2 <- collect_tab %>%
+    dplyr::filter(as.integer(.data$year)>14,
+                  setting == "inpatient") %>%
+    dplyr::mutate(data=purrr::map2(.data$source,.data$year,
+                                   ~dplyr::tbl(db_con,paste0("inpatient_dx9_",.x,"_",.y)) %>%
+                                     dplyr::distinct(.data$caseid,.data$dx) %>%
+                                     dplyr::inner_join(dplyr::tbl(db_con,paste0("inpatient_core_",.x,"_",.y)) %>%
+                                                         dplyr::select(.data$caseid,.data$enrolid),
+                                                       by="caseid") %>%
+                                     dplyr::distinct(.data$enrolid,.data$caseid,.data$dx) %>%
+                                     dplyr::collect(n=Inf) %>%
+                                     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid))))
+  
+  in_temp3 <- collect_tab %>%
+    dplyr::filter(as.integer(.data$year)>14,
+                  setting == "inpatient") %>%
+    dplyr::mutate(data=purrr::map2(source,.data$year,
+                                   ~dplyr::tbl(db_con,paste0("inpatient_dx10_",.x,"_",.y)) %>%
+                                     dplyr::distinct(.data$caseid,.data$dx) %>%
+                                     dplyr::inner_join(dplyr::tbl(db_con,paste0("inpatient_core_",.x,"_",.y)) %>%
+                                                         dplyr::select(.data$caseid,.data$enrolid),
+                                                       by="caseid") %>%
+                                     dplyr::distinct(.data$enrolid,.data$caseid,.data$dx) %>%
+                                     dplyr::collect(n=Inf) %>%
+                                     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid))))
+  
+  in_temp <- dplyr::bind_rows(in_temp1,in_temp2,in_temp3) %>%
+    dplyr::select(-.data$setting) %>%
+    tidyr::unnest(cols = c(data)) %>%
+    dplyr::group_by(source,.data$year) %>%
+    tidyr::nest()
+  
+  rm(in_temp1,in_temp2,in_temp3)
+  
+  #### get outpatient diagnoses ####
+  out_temp1 <- collect_tab %>%
+    dplyr::filter(as.integer(.data$year)<15,
+                  setting == "outpatient") %>%
+    dplyr::mutate(data=purrr::map2(source,.data$year,
+                                   ~dplyr::tbl(db_con,paste0("outpatient_dx_",.x,"_",.y)) %>%
+                                     dplyr::distinct(seqnum_o,.data$enrolid,.data$svcdate,.data$dx) %>%
+                                     dplyr::inner_join(dplyr::tbl(db_con,paste0("outpatient_core_",.x,"_",.y)) %>%
+                                                         dplyr::select(seqnum_o,.data$stdplac),
+                                                       by="seqnum_o") %>%
+                                     dplyr::distinct(.data$enrolid,.data$svcdate,.data$stdplac,.data$dx) %>%
+                                     dplyr::collect(n=Inf) %>%
+                                     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid))))
+  
+  out_temp2 <- collect_tab %>%
+    dplyr::filter(as.integer(.data$year)>14,
+                  setting == "outpatient") %>%
+    dplyr::mutate(data=purrr::map2(source,.data$year,
+                                   ~dplyr::tbl(db_con,paste0("outpatient_dx9_",.x,"_",.y)) %>%
+                                     dplyr::distinct(seqnum_o,.data$enrolid,.data$svcdate,.data$dx) %>%
+                                     dplyr::inner_join(dplyr::tbl(db_con,paste0("outpatient_core_",.x,"_",.y)) %>%
+                                                         dplyr::select(seqnum_o,.data$stdplac),
+                                                       by="seqnum_o") %>%
+                                     dplyr::distinct(.data$enrolid,.data$svcdate,.data$stdplac,.data$dx) %>%
+                                     dplyr::collect(n=Inf) %>%
+                                     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid))))
+  
+  out_temp3 <- collect_tab %>%
+    dplyr::filter(as.integer(.data$year)>14,
+                  setting == "outpatient") %>%
+    dplyr::mutate(data=purrr::map2(source,.data$year,
+                                   ~dplyr::tbl(db_con,paste0("outpatient_dx10_",.x,"_",.y)) %>%
+                                     dplyr::distinct(seqnum_o,.data$enrolid,.data$svcdate,.data$dx) %>%
+                                     dplyr::inner_join(dplyr::tbl(db_con,paste0("outpatient_core_",.x,"_",.y)) %>%
+                                                         dplyr::select(seqnum_o,.data$stdplac),
+                                                       by="seqnum_o") %>%
+                                     dplyr::distinct(.data$enrolid,.data$svcdate,.data$stdplac,.data$dx) %>%
+                                     dplyr::collect(n=Inf) %>%
+                                     dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid))))
+  
+  
+  out_temp <- dplyr::bind_rows(out_temp1,out_temp2,out_temp3) %>%
+    dplyr::select(-.data$setting) %>%
+    tidyr::unnest(cols = c(data)) %>%
+    dplyr::group_by(source,.data$year) %>%
+    tidyr::nest()
+  rm(out_temp1,out_temp2,out_temp3)
+  ### Merge in the keys ####
+  # Merge inpatient keys
+  in_dx_keys <- db_con %>%
+    dplyr::tbl("inpatient_keys") %>%
+    dplyr::collect(n=Inf) %>%
+    dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid)) %>%
+    dplyr::select(.data$source_type,.data$year,.data$caseid,.data$key) %>%
+    dplyr::inner_join(in_temp %>%
+                        dplyr::mutate(source_type = ifelse(source=="ccae",1L,
+                                                           ifelse(source=="mdcr",2L,3L))) %>% 
+                        tidyr::unnest(cols = c(data)),
+                      by = c("source_type", "year", "caseid")) %>%
+    dplyr::select(.data$dx,.data$key)
+  
+  ## Merge outpatient keys
+  out_dx_keys <- db_con %>%
+    dplyr::tbl("outpatient_keys") %>%
+    dplyr::collect(n=Inf) %>%
+    dplyr::mutate(enrolid=bit64::as.integer64(.data$enrolid)) %>%
+    dplyr::select(.data$enrolid,.data$stdplac,.data$svcdate,.data$key) %>%
+    dplyr::inner_join(out_temp %>%
+                        ungroup() %>%
+                        dplyr::select(.data$data) %>%
+                        tidyr::unnest(cols = c(data)),
+                      by = c("enrolid", "stdplac", "svcdate")) %>%
+    dplyr::select(.data$key,.data$dx)
+  
+  dx_keys <- dplyr::bind_rows(in_dx_keys,out_dx_keys) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(key %in% keys)
+  
+  #### Return ####
+  return(dx_keys)
+}
 
 
