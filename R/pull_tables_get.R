@@ -257,4 +257,48 @@ return(out)
 }
 
 
+#' Get Procedure visits from facility tables for a set of procedure codes
+#'
+#' This function collects dates for procedures
+#'
+#' @importFrom rlang .data
+#'
+#' @param source ccae, mdcr or medicaid
+#' @param year year
+#' @param proc_codes vector of procedure codes to pull visits for
+#' @param tbl_vars names of variables to pull from corresponding tables. If NULL date and enrolid will be collected
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#'
+#' @export
+get_facility_procs <- function(source,year,proc_codes,tbl_vars=NULL,db_con,collect_n=Inf){
+  
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
+  checkmate::assertVector(proc_codes)
+  
+  tbl_name <- glue::glue("facility_proc_{source}_{year}")
+  
+  if (year=="01") {return(NULL)}
+  
+  get_vars <- dplyr::tbl(db_con,tbl_name) %>% dplyr::tbl_vars() %>% as.vector()
+  
+  if (is.null(tbl_vars)){
+    get_vars <- c("enrolid","proc","svcdate")
+  } else {
+    get_vars <- tbl_vars[tbl_vars %in% get_vars]
+  }
+  
+  out <- db_con %>%
+    dplyr::tbl(tbl_name) 
+  
+    out <- out %>%
+      dplyr::filter(.data$proc %in% proc_codes) %>% 
+      dplyr::select(all_of(get_vars)) %>%
+      dplyr::collect(n=collect_n)
+  
+  return(out)
+  
+}
+
+
 

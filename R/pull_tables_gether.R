@@ -402,5 +402,42 @@ gether_inpatient_dx_keys <- function(collect_tab=collect_table(),dx_list,dx_num=
   return(out)
 }
 
-
+#' Gather facility visits associated with a set of procedures
+#'
+#' This function return a tibble of
+#'
+#' @importFrom rlang .data
+#'
+#' @param collect_tab A collection table
+#' @param proc_codes A named list of icd9, icd10 and CPT procedure codes, with names of "icd9pcs_codes" and
+#' "icd10pcs_codes", and "cpt_codes" respectively
+#' @param tbl_vars names of variables to pull from corresponding tables. If NULL date and enrolid will be collected
+#' @param db_con A connection to the database
+#'
+#' @export
+gether_facility_procs <- function(collect_tab=collect_table(),proc_list,tbl_vars=NULL,db_con){
+  
+  # combine procedure codes
+  proc_codes <- c(proc_list$icd9pcs_codes,
+                  proc_list$icd10pcs_codes,
+                  proc_list$cpt_codes)
+  
+  # pull procedures
+  out <- collect_tab %>% 
+    dplyr::distinct(source,year) %>% 
+    dplyr::mutate(data=purrr::map2(source,year,
+                                   ~get_facility_procs(source = .x,
+                                                       year = .y,
+                                                       proc_codes = proc_codes,
+                                                       db_con = con,
+                                                       tbl_vars = tbl_vars)))
+  
+  # combine output
+  out <- dplyr::bind_rows(out$data) %>% 
+    dplyr::distinct()
+ 
+  
+  #### Return ####
+  return(out)
+}
 
