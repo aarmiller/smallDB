@@ -6,7 +6,8 @@ library(tidyverse)
 library(smallDB)
 
 # connect to database
-con <- DBI::dbConnect(RSQLite::SQLite(), "/Shared/AML/small_dbs/fourniers/truven/fourniers_old.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), 
+                      "/Shared/Statepi_Diagnosis/collab_projects/fourniers/data/truven/fourniers.db")
 
 # put together a list of procedure codes to pass to the gether function
 proc_list <- list(icd9pcs_codes = c("3893","9999","8622"),
@@ -14,7 +15,7 @@ proc_list <- list(icd9pcs_codes = c("3893","9999","8622"),
                   cpt_codes = c())
 
 # gather the facility visits using `gether_facility_procs()`
-tmp <- gether_facility_procs(collect_tab = collect_table(years = 1:17),
+tmp <- gether_facility_procs(collect_tab = collect_table(years = 1:20),
                              proc_list = proc_list,
                              db_con = con)
 
