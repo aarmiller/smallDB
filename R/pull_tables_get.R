@@ -302,3 +302,60 @@ get_facility_procs <- function(source,year,proc_codes,tbl_vars=NULL,db_con,colle
 
 
 
+#' Collect all inpatient diagnosis visits
+#'
+#' Collect all inpatient visits along with the diagnosis order
+#'
+#' @param source ccae, mdcr or medicaid
+#' @param year year (as integer value)
+#' @param dx_num a logical indicator of whether to collect diagnosis number. Default is TRUE.
+#' @param db_con a connection to a database,
+#' @param collect_n the number of rows to collect
+#' @param keys what keys to return diagnoses for
+#' @return A tibble of variables from the respective table
+#'
+#' @export
+get_all_inpatient_dx_visits <- function(source,year,dx_num=TRUE,db_con,collect_n=Inf,keys){
+  
+  checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
+  
+  if (as.integer(year)<=14){
+    
+    tbl_name <- glue::glue("inpatient_dx_{source}_{year}")
+    
+    out <- db_con %>%
+      dplyr::tbl(tbl_name) %>%
+      dplyr::collect(n=collect_n)
+    
+  } else {
+    
+    tbl_name1 <- glue::glue("inpatient_dx9_{source}_{year}")
+    tbl_name2 <- glue::glue("inpatient_dx10_{source}_{year}")
+    
+    out1 <- db_con %>%
+      dplyr::tbl(tbl_name1) %>%
+      dplyr::collect(n=collect_n)
+    
+    out2 <- db_con %>%
+      dplyr::tbl(tbl_name2) %>%
+      dplyr::collect(n=collect_n)
+    
+    out <- rbind(out1,out2)
+    
+    
+  }
+  
+  if (dx_num == FALSE){
+    out <- out %>% 
+      dplyr::select(caseid,dx) %>% 
+      dplyr::distinct()
+  }
+  
+  return(out)
+}
+
+
+
+
+
+
