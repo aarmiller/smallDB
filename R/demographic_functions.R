@@ -24,7 +24,7 @@ get_enroll_data <- function (source, year,
   
    out <- dplyr::tbl(db_con,tbl_name) %>% 
            dplyr::filter(enrolid %in% enrolid_list) %>% 
-           dplyr::select(c("enrolid", dplyr::all_of(vars))) %>% 
+           dplyr::select(c("enrolid", dplyr::any_of(vars))) %>% 
            dplyr::collect(n = collect_n) %>% dplyr::mutate(enrolid = as.integer(enrolid)) %>% 
            dplyr::distinct()
    
@@ -97,9 +97,10 @@ get_collapse_enrollment <- function (source, year, enrolid_list, collect_n = Inf
   
   temp <- dplyr::tbl(db_con,tbl_name)  %>%
     dplyr::filter(enrolid %in% enrolid_list) %>% 
-    dplyr::select(c("enrolid", "dtstart", "dtend", dplyr::all_of(vars))) %>% 
+    dplyr::select(c("enrolid", "dtstart", "dtend", dplyr::any_of(vars))) %>% 
     dplyr::collect(n = collect_n) %>% 
-    dplyr::mutate(enrolid = as.integer(.data$enrolid))
+    dplyr::mutate(enrolid = as.integer(.data$enrolid)) %>% 
+    dplyr::mutate(across(any_of(vars), ~as.character(.)))
 
   return(temp)
 }
