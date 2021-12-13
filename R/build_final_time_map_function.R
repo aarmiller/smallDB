@@ -128,6 +128,15 @@ build_final_time_map <- function (time_map = NULL,
     final_time_map <- time_map %>%
       dplyr::left_join(ssd_inds, by="key") %>%
       dplyr::mutate_at(dplyr::vars(dplyr::all_of(ind_names)),.funs = list(~ifelse(is.na(.),0L,.)))
+    
+    # aggregate duplicate visits on same day and in same location
+    vars_to_summarise <- c("inpatient", "ed", "first_dx","outpatient","rx","obs_stay",
+                           ind_names)
+    
+    final_time_map <- final_time_map %>%
+                      group_by(enrolid, days_since_dx, stdplac) %>%
+                      summarise_at(vars(vars_to_summarise), .funs = list(~max(.))) %>% 
+                      ungroup()
 
     # filter timemap to period of interest before diagnosis
     final_time_map <- final_time_map %>%
