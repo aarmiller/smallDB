@@ -115,8 +115,8 @@ build_time_map_keys <- function(collect_tab=collect_table(), db_con){
 
   # assemble time_map
   temp_time_map <- dplyr::bind_rows(temp.in,temp.out,temp.rx) %>%
-    dplyr::distinct() %>% 
     dplyr::arrange(.data$enrolid, .data$admdate,.data$setting_type) %>%
+    dplyr::distinct(year,source_type,enrolid,admdate,disdate,setting_type,stdplac) %>% 
     dplyr::mutate(key=dplyr::row_number()) 
   
   
