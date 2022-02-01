@@ -115,13 +115,13 @@ build_final_time_map <- function (time_map = NULL,
       dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0)) 
 
     require(data.table)
-    dt <- data.table(final_time_map_temp)
+    dt <- data.table::data.table(final_time_map_temp)
     final_time_map <- dt[, lapply(.SD, max), 
                          .SDcols = vars_to_summarise, 
                          by = grouping_vars]
     
-    final_time_map <- as_tibble(final_time_map)
-    
+    final_time_map <- dplyr::as_tibble(final_time_map)
+  
     # filter timemap to period of interest before diagnosis
     final_time_map <- final_time_map %>%
       dplyr::mutate(all_visits = 1)
