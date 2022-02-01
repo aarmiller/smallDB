@@ -36,10 +36,7 @@ build_final_time_map <- function (time_map = NULL,
     # select for enroilid that were enrolled >=duration_prior_to_index days prior to index
     index_data <- index_data %>% 
       dplyr::filter(time_before_index >= duration_prior_to_index)
-    
-    enrolled_ge_1year <- index_data %>% 
-      dplyr::distinct(enrolid) %>% .$enrolid
-
+ 
     if (is.null(time_map)){
       # build timemap
       time_map <- smallDB::build_time_map(db_con = db_con, 
