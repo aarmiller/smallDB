@@ -24,45 +24,21 @@ build_final_time_map <- function (time_map = NULL,
                                   duration_prior_to_index = 365L,
                                   collect_tab = smallDB::collect_table(),
                                   cohort_path, ssd_list){
-
-    #update all_dx to include dx date instead of time to dx (this is necessary as index dates are shifted do time to dx needs to be recalculated)
-    all_dx <- all_dx  %>% dplyr::inner_join(index_data %>% select(enrolid, index_date),
-                                     by = "enrolid") %>%
-      dplyr::mutate(visit_date = index_date + days_since_index) %>%
-      dplyr::select(-days_since_index, - index_date)
-
+  
     # Get subset of enrolids that will be used in the analysis
     final_cohort <- readr::read_rds(cohort_path)
 
     index_data <- final_cohort %>%
       dplyr::mutate(time_before_index = index_date - first_enroll) %>%
-      dplyr::select(enrolid, index_date , enroll_first = first_enroll, time_before_index, first_dx_source = index_dx_source, stdplac, key)
-
-    #update all_dx to include adjusted days_since_index using new index dates also select for enrolids in cohort
-    all_dx <- all_dx  %>%
-      dplyr::inner_join(index_data %>% select(enrolid, index_date),
-                        by = "enrolid") %>%
-      dplyr::mutate(days_since_index = visit_date - index_date) %>%
-      dplyr::select(-visit_date, -index_date)
+      dplyr::select(enrolid, index_date , enroll_first = first_enroll, 
+                    time_before_index, first_dx_source = index_dx_source, stdplac, key)
 
     # select for enroilid that were enrolled >=duration_prior_to_index days prior to index
-    enrolled_ge_1year <- index_data %>% 
-      dplyr::filter(time_before_index >= duration_prior_to_index) %>%
-      dplyr::distinct(enrolid) %>% .$enrolid
-    
     index_data <- index_data %>% 
       dplyr::filter(time_before_index >= duration_prior_to_index)
     
-    dx_data <- all_dx %>% 
-      dplyr::filter(enrolid %in% enrolled_ge_1year) %>%
-      dplyr::rename(days_since_dx=days_since_index) %>%
-      dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0))
-    
-    rx_data <- all_rx %>% 
-      dplyr::inner_join(index_data %>% select(enrolid, index_date), by = "enrolid") %>%
-      dplyr::mutate(days_since_rx = rx_date - index_date) %>%
-      dplyr::filter(dplyr::between(days_since_rx,-duration_prior_to_index,0)) %>% 
-      dplyr::select(enrolid, rx, days_since_rx)
+    enrolled_ge_1year <- index_data %>% 
+      dplyr::distinct(enrolid) %>% .$enrolid
 
     if (is.null(time_map)){
       # build timemap
@@ -125,28 +101,33 @@ build_final_time_map <- function (time_map = NULL,
       names()
 
     # add indicators to time_map
-    final_time_map <- time_map %>%
+    final_time_map_temp <- time_map %>%
       dplyr::left_join(ssd_inds, by="key") %>%
       dplyr::mutate_at(dplyr::vars(dplyr::all_of(ind_names)),.funs = list(~ifelse(is.na(.),0L,.)))
     
     # aggregate duplicate visits on same day and in same location
-    vars_to_summarise <- c("inpatient", "ed", "first_dx","outpatient","rx","obs_stay",
-                           ind_names)
-    
-    final_time_map <- final_time_map %>%
-                      group_by(enrolid, days_since_dx, stdplac) %>%
-                      summarise_at(vars(vars_to_summarise), .funs = list(~max(.))) %>% 
-                      ungroup()
+    vars_to_summarise <- c("inpatient", "ed", "first_dx","outpatient",
+                           "rx","obs_stay", ind_names)
+    grouping_vars <- c("enrolid", "days_since_dx", "stdplac")
 
     # filter timemap to period of interest before diagnosis
+    final_time_map_temp <- final_time_map_temp %>%
+      dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0)) 
+
+    require(data.table)
+    dt <- data.table(final_time_map_temp)
+    final_time_map <- dt[, lapply(.SD, max), 
+                         .SDcols = vars_to_summarise, 
+                         by = grouping_vars]
+    
+    final_time_map <- as_tibble(final_time_map)
+    
+    # filter timemap to period of interest before diagnosis
     final_time_map <- final_time_map %>%
-      dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0)) %>% 
       dplyr::mutate(all_visits = 1)
 
   return(list(final_time_map = final_time_map,
-              index_data = index_data,
-              dx_data = dx_data,
-              rx_data = rx_data))
+              index_data = index_data))
 }
 
 
