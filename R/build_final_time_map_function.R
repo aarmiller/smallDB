@@ -111,14 +111,20 @@ build_final_time_map <- function (time_map = NULL,
     final_time_map_temp <- final_time_map_temp %>%
       dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0)) 
     
-    # get distinct visit (distinct enrolid, days_since_dx, std_place)
-    dt <- data.table::data.table(final_time_map_temp)
-    dt1 <- dt[, lapply(.SD, max), 
-                         .SDcols = vars_to_summarise, 
-                         by = grouping_vars]
+    # # get distinct visit (distinct enrolid, days_since_dx, std_place)
     
-    final_time_map <- tibble::as_tibble(dt1)
-  
+    # dt <- data.table::data.table(final_time_map_temp)
+    # dt1 <- dt[, lapply(.SD, max), 
+    #                      .SDcols = vars_to_summarise, 
+    #                      by = grouping_vars]
+    # 
+    # final_time_map <- tibble::as_tibble(dt1)
+    
+    final_time_map <-  final_time_map_temp %>%
+      group_by(enrolid, days_since_dx, stdplac) %>%
+      summarise_at(vars(vars_to_summarise), .funs = list(~max(.))) %>% 
+      ungroup()
+    
     # If on a given "distinct" visit, if it was labeled
     # as both and outpatient and ED, it should be labeled as an ED visit and not an outpatient visit.
     # what to do with obs_stay?
