@@ -110,7 +110,8 @@ build_final_time_map <- function (time_map = NULL,
     # filter timemap to period of interest before diagnosis
     final_time_map_temp <- final_time_map_temp %>%
       dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0)) 
-
+    
+    # get distinct visit (distinct enrolid, days_since_dx, std_place)
     require(data.table)
     dt <- data.table(final_time_map_temp)
     final_time_map <- dt[, lapply(.SD, max), 
@@ -119,8 +120,11 @@ build_final_time_map <- function (time_map = NULL,
     
     final_time_map <- dplyr::as_tibble(final_time_map)
   
-    # filter timemap to period of interest before diagnosis
-    final_time_map <- final_time_map %>%
+    # If on a given "distinct" visit, if it was labeled
+    # as both and outpatient and ED, it should be labeled as an ED visit and not an outpatient visit.
+    # what to do with obs_stay?
+    final_time_map <- final_time_map  %>%
+      dplyr::mutate(outpatient = ifelse(inpatient == 0 & ed == 0 & rx == 0 & obs_stay == 0, 1, 0)) %>% 
       dplyr::mutate(all_visits = 1)
 
   return(list(final_time_map = final_time_map,
