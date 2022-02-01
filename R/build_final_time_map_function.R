@@ -112,7 +112,7 @@ build_final_time_map <- function (time_map = NULL,
       dplyr::filter(dplyr::between(days_since_dx,-duration_prior_to_index,0)) 
 
     require(data.table)
-    dt <- data.table::data.table(final_time_map_temp)
+    dt <- data.table(final_time_map_temp)
     final_time_map <- dt[, lapply(.SD, max), 
                          .SDcols = vars_to_summarise, 
                          by = grouping_vars]
