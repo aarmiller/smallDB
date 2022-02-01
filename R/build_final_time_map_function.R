@@ -121,9 +121,9 @@ build_final_time_map <- function (time_map = NULL,
     # final_time_map <- tibble::as_tibble(dt1)
     
     final_time_map <-  final_time_map_temp %>%
-      group_by(enrolid, days_since_dx, stdplac) %>%
-      summarise_at(vars(vars_to_summarise), .funs = list(~max(.))) %>% 
-      ungroup()
+      dplyr::group_by(enrolid, days_since_dx, stdplac) %>%
+      dplyr::summarise_at(dplyr::vars(vars_to_summarise), .funs = list(~max(.))) %>% 
+      dplyr::ungroup()
     
     # If on a given "distinct" visit, if it was labeled
     # as both and outpatient and ED, it should be labeled as an ED visit and not an outpatient visit.
