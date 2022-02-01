@@ -113,7 +113,7 @@ build_final_time_map <- function (time_map = NULL,
     
     # get distinct visit (distinct enrolid, days_since_dx, std_place)
     dt <- data.table::data.table(final_time_map_temp)
-    dt1 <- dt[, lapply(data.table::.SD, max), 
+    dt1 <- dt[, lapply(.SD, max), 
                          .SDcols = vars_to_summarise, 
                          by = grouping_vars]
     
