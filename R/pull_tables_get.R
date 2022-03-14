@@ -325,7 +325,8 @@ get_all_inpatient_dx_visits <- function(source,year,dx_num=TRUE,db_con,collect_n
     
     out <- db_con %>%
       dplyr::tbl(tbl_name) %>%
-      dplyr::collect(n=collect_n)
+      dplyr::collect(n=collect_n) %>% 
+      dplyr::mutate(dx_ver=9L)
     
   } else {
     
@@ -334,11 +335,13 @@ get_all_inpatient_dx_visits <- function(source,year,dx_num=TRUE,db_con,collect_n
     
     out1 <- db_con %>%
       dplyr::tbl(tbl_name1) %>%
-      dplyr::collect(n=collect_n)
+      dplyr::collect(n=collect_n) %>% 
+      dplyr::mutate(dx_ver=9L)
     
     out2 <- db_con %>%
       dplyr::tbl(tbl_name2) %>%
-      dplyr::collect(n=collect_n)
+      dplyr::collect(n=collect_n) %>% 
+      dplyr::mutate(dx_ver=10L)
     
     out <- rbind(out1,out2)
     
