@@ -8,7 +8,7 @@
 A data frame with 55 rows and 2 variables:
 \describe{
   \item{stdplac}{Integer Value for stdplac}
-  \item{icd9cm}{Place of Servce Label}
+  \item{label}{Place of Servce Label}
 }
 }
 \source{
