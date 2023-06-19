@@ -282,7 +282,7 @@ add_tm_keys <- function(db_con, overwrite=FALSE, temporary=TRUE){
 build_tm <- function(db_con){
   if (!any(DBI::dbListTables(db_con) %in% c("outpatient_keys","inpatient_keys"))){
     warning("Database contains no visit keys. Temporary visit keys were generated using the collection table specified.")
-    add_tm_keys(collect_tab=collect_tab, db_con = db_con,temporary = TRUE)
+    add_tm_keys(db_con = db_con,temporary = TRUE)
   }
   
   dat <- rbind(db_con %>%
