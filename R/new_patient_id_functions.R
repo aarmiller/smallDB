@@ -120,7 +120,7 @@ build_tm_keys <- function(db_con){
     gether_core_data(vars = c("patient_id", "stdplac", "svcdate", "stdprov",
                               "svcscat", "procgrp", "revcode", "proc1"),
                      db_con = db_con) %>%
-    dplyr::mutate(core_data=purrr::map(.data$core_data,~dplyr::distinct(.)))
+    dplyr::mutate(core_data=purrr::map(core_data,~dplyr::distinct(.)))
   
   # clean outpatient visits
   temp.out <- temp.out %>%
@@ -130,8 +130,8 @@ build_tm_keys <- function(db_con){
     mutate(core_data = map(core_data, ~mutate(., procgrp = as.character(procgrp),
                                               stdprov = as.character(stdprov)))) %>%
     tidyr::unnest(cols = c(core_data)) %>%
-    dplyr::mutate(disdate = .data$svcdate,
-                  admdate = .data$svcdate,
+    dplyr::mutate(disdate = svcdate,
+                  admdate = svcdate,
                   setting_type = 1L) %>%
     dplyr::select(-svcdate) %>% 
     distinct()
@@ -154,8 +154,8 @@ build_tm_keys <- function(db_con){
     mutate(core_data = map(core_data, ~mutate(.,stdprov = as.character(stdprov),
                                               caseid = as.integer(caseid)))) %>%
     tidyr::unnest(cols = c(core_data)) %>%
-    dplyr::mutate(disdate = .data$svcdate,
-                  admdate = .data$svcdate) %>%
+    dplyr::mutate(disdate = svcdate,
+                  admdate = svcdate) %>%
     dplyr::select(-svcdate)
   
   # filter to outpatient not in services
@@ -198,19 +198,19 @@ build_tm_keys <- function(db_con){
   
   # get distinct outpatient keys
   out_keys <- temp_time_map %>%
-    dplyr::filter(.data$setting_type %in% 1:3) %>%
+    dplyr::filter(setting_type %in% 1:3) %>%
     dplyr::select("year","source_type","patient_id","stdplac", "setting_type",
                   "svcdate"="admdate","key")
   
   # get distinct inpatient keys
   in_keys <- temp_time_map %>%
-    dplyr::filter(.data$setting_type==5) %>%
+    dplyr::filter(setting_type==5) %>%
     dplyr::select("year","source_type","patient_id","admdate",
                   "disdate","caseid","setting_type","key")
   
   # get distinct rx keys
   rx_keys <- temp_time_map %>%
-    dplyr::filter(.data$setting_type==4) %>%
+    dplyr::filter(setting_type==4) %>%
     dplyr::select("year","source_type","patient_id","svcdate"="admdate","key", "setting_type")
   
   return(list(time_map = temp_time_map,
@@ -288,25 +288,25 @@ build_tm <- function(db_con){
   dat <- rbind(db_con %>%
                  dplyr::tbl("outpatient_keys") %>%
                  dplyr::collect(n=Inf) %>%
-                 dplyr::mutate(disdate=.data$svcdate) %>%
+                 dplyr::mutate(disdate=svcdate) %>%
                  dplyr::select("key","year","source_type","patient_id","admdate"="svcdate",
                                "disdate","stdplac", "setting_type"),
                
                db_con %>%
                  dplyr::tbl("rx_keys") %>%
                  dplyr::collect(n=Inf) %>%
-                 dplyr::mutate(disdate=.data$svcdate,
+                 dplyr::mutate(disdate=svcdate,
                                stdplac=-2L) %>%
                  dplyr::select("key","year","source_type","patient_id","admdate"="svcdate",
                                "disdate","stdplac","setting_type"),
                
                db_con %>%
                  dplyr::tbl("inpatient_keys") %>%
-                 dplyr::select(-.data$caseid) %>%
+                 dplyr::select(-caseid) %>%
                  dplyr::collect(n=Inf) %>%
                  dplyr::mutate(stdplac=-1L) %>%
-                 dplyr::select(.data$key,dplyr::everything())) %>%
-    dplyr::arrange(.data$enrolid, .data$admdate, .data$setting_type)
+                 dplyr::select(key,dplyr::everything())) %>%
+    dplyr::arrange(patient_id, admdate, setting_type)
   
   return(dat)
 }
