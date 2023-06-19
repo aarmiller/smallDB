@@ -12,7 +12,7 @@
 #'
 #' @export
 get_core_data <- function(setting,source,year,vars=c(),db_con,collect_n=Inf){
-  checkmate::assert_choice(setting, c("inpatient", "outpatient"))
+  checkmate::assert_choice(setting, c("inpatient", "outpatient","facility"))
   checkmate::assert_choice(source, c("ccae", "mdcr","medicaid"))
 
   tbl_name <- glue::glue("{setting}_core_{source}_{year}")
