@@ -237,22 +237,5 @@ build_time_map <- function(db_con,collect_tab=collect_table()){
   return(dat)
 }
 
-#' Assemble longitudinal timemap from small db
-#'
-#' This function makes a longitudinal time_map and adds it to the small database. 
-#' After running this function you can use `retrieve_time_map()` to collect the 
-#' timemap from the small database.
-#'
-#' @importFrom rlang .data
-#'
-#' @param db_con connection to the small database
-#' @param collect_tab (optional) a collection table. This argument is only used to make temporary,
-#' visit keys if no keys are found in the database
-#' @return a tibble containing the timemap
-#' @export
-#'
-assemble_time_map <- function(db_con,collect_tab=collect_table()){
-  
-}
 
 
