@@ -53,7 +53,7 @@ get_rx_dates <- function(source,year,db_con,collect_n=Inf){
 
   out <- db_con %>%
     dplyr::tbl(tbl_name) %>%
-    dplyr::select(any_of("enrolid","patient_id","svcdate")) %>%
+    dplyr::select(any_of(c("enrolid","patient_id","svcdate"))) %>%
     dplyr::distinct() %>%
     dplyr::collect(n=collect_n)
 
