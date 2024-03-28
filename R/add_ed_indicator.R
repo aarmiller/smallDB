@@ -28,7 +28,7 @@ add_ed_obs_indicator <- function(data){
     # Observational Stay
     dplyr::mutate(setting_type = ifelse(proc1 %in% c("99218", "99219", "99220", "99224", "99225", 
                                                      "99226", "99234", "99235", "99236"), 3L, setting_type)) %>% 
-    dplyr::select(year, source_type, enrolid, admdate, disdate, setting_type, stdplac)
+    dplyr::select(any_of(c("year", "source_type", "enrolid","patient_id", "admdate", "disdate","svcdate", "setting_type", "stdplac")))
   
   return(out)
 }
